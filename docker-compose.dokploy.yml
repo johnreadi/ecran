@@ -1,0 +1,86 @@
+# Docker Compose pour Dokploy
+# Ce fichier est utilisé par Dokploy pour déployer l'application
+# Les ports ne sont PAS exposés - tout passe par le reverse proxy Traefik de Dokploy
+
+version: '3.8'
+
+services:
+  # Backend API
+  api:
+    build:
+      context: ./slide-effect-server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # PAS DE PORTS EXPOSÉS - communication interne uniquement
+    expose:
+      - "3003"
+    environment:
+      - PORT=3003
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=https://ecran.readi.fr
+      - NODE_ENV=production
+    volumes:
+      - api-data:/app/data
+    networks:
+      - dokploy-overlay
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Admin Frontend (slide-effect-admin)
+  admin:
+    build:
+      context: ./slide-effect-admin
+      dockerfile: Dockerfile.dokploy
+      args:
+        - VITE_API_URL=https://ecran.readi.fr/api
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - dokploy-overlay
+    depends_on:
+      - api
+
+  # Player Frontend
+  player:
+    build:
+      context: ./slide-effect-player
+      dockerfile: Dockerfile.dokploy
+      args:
+        - VITE_API_URL=https://ecran.readi.fr/api
+        - VITE_WS_URL=wss://ecran.readi.fr
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - dokploy-overlay
+    depends_on:
+      - api
+
+  # Nginx Reverse Proxy (interne uniquement)
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    expose:
+      - "80"
+    volumes:
+      - ./nginx.dokploy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - dokploy-overlay
+    depends_on:
+      - api
+      - admin
+      - player
+
+volumes:
+  api-data:
+    driver: local
+
+networks:
+  dokploy-overlay:
+    external: true
+    name: dokploy-overlay

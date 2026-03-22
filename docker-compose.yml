@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Backend API + WebSocket
+  api:
+    build:
+      context: ./slide-effect-server
+      dockerfile: Dockerfile
+    container_name: slide-effect-api
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3003
+      - JWT_SECRET=${JWT_SECRET:-slide-effect-secret-change-in-prod}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    networks:
+      - slide-effect-network
+
+  # Editor (React app)
+  editor:
+    build:
+      context: ./slide-effect-app
+      dockerfile: Dockerfile
+    container_name: slide-effect-editor
+    restart: unless-stopped
+    networks:
+      - slide-effect-network
+    depends_on:
+      - api
+
+  # Player (React app for TVs)
+  player:
+    build:
+      context: ./slide-effect-player
+      dockerfile: Dockerfile
+    container_name: slide-effect-player
+    restart: unless-stopped
+    networks:
+      - slide-effect-network
+    depends_on:
+      - api
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: slide-effect-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - editor
+      - player
+    networks:
+      - slide-effect-network
+
+networks:
+  slide-effect-network:
+    driver: bridge
