@@ -1,0 +1,78 @@
+FROM nginx:alpine
+
+RUN rm /etc/nginx/nginx.conf
+
+RUN printf 'events {\n\
+    worker_connections 1024;\n\
+}\n\
+\n\
+http {\n\
+    include /etc/nginx/mime.types;\n\
+    default_type application/octet-stream;\n\
+\n\
+    gzip on;\n\
+    gzip_vary on;\n\
+    gzip_proxied any;\n\
+    gzip_comp_level 6;\n\
+    gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml application/atom+xml image/svg+xml;\n\
+\n\
+    proxy_connect_timeout 60s;\n\
+    proxy_send_timeout 60s;\n\
+    proxy_read_timeout 60s;\n\
+\n\
+    upstream api {\n\
+        server api:4003;\n\
+    }\n\
+\n\
+    upstream admin {\n\
+        server admin:80;\n\
+    }\n\
+\n\
+    upstream player {\n\
+        server player:80;\n\
+    }\n\
+\n\
+    server {\n\
+        listen 80;\n\
+        server_name _;\n\
+\n\
+        location /api/ {\n\
+            proxy_pass http://api/;\n\
+            proxy_http_version 1.1;\n\
+            proxy_set_header Host $host;\n\
+            proxy_set_header X-Real-IP $remote_addr;\n\
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+            proxy_set_header X-Forwarded-Proto $scheme;\n\
+        }\n\
+\n\
+        location /socket.io/ {\n\
+            proxy_pass http://api;\n\
+            proxy_http_version 1.1;\n\
+            proxy_set_header Upgrade $http_upgrade;\n\
+            proxy_set_header Connection "upgrade";\n\
+            proxy_set_header Host $host;\n\
+            proxy_set_header X-Real-IP $remote_addr;\n\
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+            proxy_set_header X-Forwarded-Proto $scheme;\n\
+        }\n\
+\n\
+        location /player/ {\n\
+            proxy_pass http://player/;\n\
+            proxy_set_header Host $host;\n\
+            proxy_set_header X-Real-IP $remote_addr;\n\
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+            proxy_set_header X-Forwarded-Proto $scheme;\n\
+        }\n\
+\n\
+        location / {\n\
+            proxy_pass http://admin;\n\
+            proxy_set_header Host $host;\n\
+            proxy_set_header X-Real-IP $remote_addr;\n\
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+            proxy_set_header X-Forwarded-Proto $scheme;\n\
+        }\n\
+    }\n\
+}\n' > /etc/nginx/nginx.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

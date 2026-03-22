@@ -49,13 +49,13 @@ services:
 
   # Nginx reverse proxy
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: slide-effect-nginx
     restart: unless-stopped
     expose:
       - "80"
-    volumes:
-      - ./nginx.dokploy.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
       - editor
