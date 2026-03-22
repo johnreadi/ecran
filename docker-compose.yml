@@ -8,16 +8,16 @@ services:
       dockerfile: Dockerfile
     container_name: slide-effect-api
     restart: unless-stopped
-    ports:
-      - "3003:3003"
+    expose:
+      - "4003"
     volumes:
       - ./data:/app/data
     environment:
-      - PORT=3003
+      - PORT=4003
       - JWT_SECRET=${JWT_SECRET:-slide-effect-secret-change-in-prod}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://ecran.ireadi.net}
     networks:
-      - slide-effect-network
+      - dokploy-overlay
 
   # Editor (React app)
   editor:
@@ -26,8 +26,10 @@ services:
       dockerfile: Dockerfile
     container_name: slide-effect-editor
     restart: unless-stopped
+    expose:
+      - "80"
     networks:
-      - slide-effect-network
+      - dokploy-overlay
     depends_on:
       - api
 
@@ -38,8 +40,10 @@ services:
       dockerfile: Dockerfile
     container_name: slide-effect-player
     restart: unless-stopped
+    expose:
+      - "80"
     networks:
-      - slide-effect-network
+      - dokploy-overlay
     depends_on:
       - api
 
@@ -48,19 +52,18 @@ services:
     image: nginx:alpine
     container_name: slide-effect-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    expose:
+      - "80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./nginx.dokploy.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
       - editor
       - player
     networks:
-      - slide-effect-network
+      - dokploy-overlay
 
 networks:
-  slide-effect-network:
-    driver: bridge
+  dokploy-overlay:
+    external: true
+    name: dokploy-overlay
