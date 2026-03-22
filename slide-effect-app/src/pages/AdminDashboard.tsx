@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Monitor, Users, Play, RefreshCw, Plus, Trash2, Power, Radio, Tv } from 'lucide-react';
+import { Play, RefreshCw, Plus, Tv } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 interface Player {
@@ -38,7 +38,7 @@ export function AdminDashboard() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [_socket, setSocket] = useState<Socket | null>(null);
   const [activeTab, setActiveTab] = useState<'players' | 'playlists' | 'groups'>('players');
   const [newPlayerName, setNewPlayerName] = useState('');
   const [pairingCode, setPairingCode] = useState<string | null>(null);

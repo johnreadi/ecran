@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, FileJson, FileText, FileVideo, FileImage, AlertCircle, Check, Loader2, Radio, Server, Send } from 'lucide-react';
+import { X, Upload, FileJson, FileText, FileVideo, FileImage, AlertCircle, Check, Loader2, Server, Send } from 'lucide-react';
 import type { Presentation, Slide } from '../types';
 
 interface ImportExportModalV2Props {
