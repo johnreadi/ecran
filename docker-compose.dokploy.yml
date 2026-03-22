@@ -17,7 +17,7 @@ services:
     environment:
       - PORT=3003
       - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGIN=https://ecran.readi.fr
+      - CORS_ORIGIN=https://ecran.ireadi.net
       - NODE_ENV=production
     volumes:
       - api-data:/app/data
@@ -36,7 +36,7 @@ services:
       context: ./slide-effect-admin
       dockerfile: Dockerfile.dokploy
       args:
-        - VITE_API_URL=https://ecran.readi.fr/api
+        - VITE_API_URL=https://ecran.ireadi.net/api
     restart: unless-stopped
     expose:
       - "80"
@@ -51,8 +51,8 @@ services:
       context: ./slide-effect-player
       dockerfile: Dockerfile.dokploy
       args:
-        - VITE_API_URL=https://ecran.readi.fr/api
-        - VITE_WS_URL=wss://ecran.readi.fr
+        - VITE_API_URL=https://ecran.ireadi.net/api
+        - VITE_WS_URL=wss://ecran.ireadi.net
     restart: unless-stopped
     expose:
       - "80"
