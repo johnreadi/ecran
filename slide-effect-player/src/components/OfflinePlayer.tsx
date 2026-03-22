@@ -4,14 +4,14 @@ interface OfflinePlayerProps {
   playlist: { slides: any[]; settings?: any }
   currentSlideIndex: number
   onSlideChange: (index: number) => void
-  onReset: () => void
+  onReset?: () => void
 }
 
 export function OfflinePlayer({
   playlist,
   currentSlideIndex,
   onSlideChange,
-  onReset,
+  // onReset unused but kept for API compatibility
 }: OfflinePlayerProps) {
   const slides = playlist?.slides || []
   const currentSlide = slides[currentSlideIndex]

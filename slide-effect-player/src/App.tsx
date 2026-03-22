@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { PlayerSetup } from './components/PlayerSetup'
 import { SlidePlayer } from './components/SlidePlayer'
@@ -24,7 +24,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false)
   const [isOffline, setIsOffline] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
-  const [playerId, setPlayerId] = useState<string>('')
+  const [, setPlayerId] = useState<string>('')
 
   // Load config from localStorage on mount
   useEffect(() => {
