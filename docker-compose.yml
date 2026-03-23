@@ -69,3 +69,7 @@ networks:
   dokploy-overlay:
     external: true
     name: dokploy-overlay
+
+volumes:
+  api-data:
+    driver: local
