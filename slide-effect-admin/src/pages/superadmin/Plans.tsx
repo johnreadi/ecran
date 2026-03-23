@@ -83,14 +83,14 @@ export default function Plans() {
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan);
     setFormData({
-      name: plan.name,
+      name: plan.name || '',
       description: plan.description || '',
-      price_monthly: plan.price_monthly,
-      price_yearly: plan.price_yearly,
-      max_players: plan.max_players,
-      max_screens: plan.max_screens,
-      max_storage_mb: plan.max_storage_mb,
-      features: plan.features || [],
+      price_monthly: plan.price_monthly || 0,
+      price_yearly: plan.price_yearly || 0,
+      max_players: plan.max_players || 1,
+      max_screens: plan.max_screens || 1,
+      max_storage_mb: plan.max_storage_mb || 100,
+      features: Array.isArray(plan.features) ? plan.features : [],
       stripe_price_id_monthly: plan.stripe_price_id_monthly || '',
       stripe_price_id_yearly: plan.stripe_price_id_yearly || '',
     });
@@ -400,7 +400,7 @@ export default function Plans() {
               <div className="border-t pt-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Inclus :</h4>
                 <ul className="space-y-1">
-                  {plan.features.map((feature, index) => (
+                  {Array.isArray(plan.features) && plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
                       <Check size={14} className="text-green-500" />
                       {feature}
