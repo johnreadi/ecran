@@ -85,6 +85,117 @@ router.get('/:id/players', (req: Request, res: Response) => {
   res.json(players);
 });
 
+// POST /api/users - Créer un utilisateur (admin)
+router.post('/', (req: Request, res: Response) => {
+  const { email, password, name, role = 'operator', workspace = 'default' } = req.body;
+  
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email et mot de passe requis' });
+    return;
+  }
+
+  const db = getDb();
+  
+  // Vérifier si l'email existe déjà
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (existing) {
+    res.status(409).json({ error: 'Email déjà utilisé' });
+    return;
+  }
+
+  const id = uuidv4();
+  const hash = bcrypt.hashSync(password, 10);
+  
+  db.prepare(`
+    INSERT INTO users (id, email, password_hash, name, role, workspace, status, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, 'active', datetime('now'))
+  `).run(id, email, hash, name || '', role, workspace);
+
+  // Créer le workspace
+  const workspaceId = uuidv4();
+  db.prepare(`
+    INSERT INTO workspaces (id, user_id, name) 
+    VALUES (?, ?, ?)
+  `).run(workspaceId, id, name || 'Mon Espace');
+
+  res.status(201).json({ 
+    success: true, 
+    message: 'Utilisateur créé',
+    user: { id, email, name, role, workspace }
+  });
+});
+
+// PUT /api/users/:id - Modifier un utilisateur
+router.put('/:id', (req: Request, res: Response) => {
+  const { email, password, name, role, workspace, status } = req.body;
+  
+  const db = getDb();
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id) as any;
+  
+  if (!user) {
+    res.status(404).json({ error: 'Utilisateur non trouvé' });
+    return;
+  }
+
+  // Construire la requête dynamiquement
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (email) {
+    // Vérifier si le nouvel email n'est pas déjà utilisé
+    const existing = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, req.params.id);
+    if (existing) {
+      res.status(409).json({ error: 'Email déjà utilisé' });
+      return;
+    }
+    updates.push('email = ?');
+    values.push(email);
+  }
+  if (password) {
+    updates.push('password_hash = ?');
+    values.push(bcrypt.hashSync(password, 10));
+  }
+  if (name !== undefined) {
+    updates.push('name = ?');
+    values.push(name);
+  }
+  if (role) {
+    updates.push('role = ?');
+    values.push(role);
+  }
+  if (workspace !== undefined) {
+    updates.push('workspace = ?');
+    values.push(workspace);
+  }
+  if (status) {
+    updates.push('status = ?');
+    values.push(status);
+  }
+
+  if (updates.length > 0) {
+    updates.push('updated_at = datetime(\'now\')');
+    values.push(req.params.id);
+    
+    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  res.json({ success: true, message: 'Utilisateur mis à jour' });
+});
+
+// DELETE /api/users/:id - Supprimer un utilisateur
+router.delete('/:id', (req: Request, res: Response) => {
+  const db = getDb();
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id) as any;
+  
+  if (!user) {
+    res.status(404).json({ error: 'Utilisateur non trouvé' });
+    return;
+  }
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  res.json({ success: true, message: 'Utilisateur supprimé' });
+});
+
 // POST /api/users/:id/approve - Approuver un utilisateur
 router.post('/:id/approve', (req: Request, res: Response) => {
   const db = getDb();
