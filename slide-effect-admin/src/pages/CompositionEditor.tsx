@@ -1871,6 +1871,56 @@ export default function CompositionEditor() {
               height: Math.min(composition.height * 0.75, window.innerHeight * 0.75),
               background: composition.backgroundColor,
             }}>
+              {/* Zones d'écran dans l'aperçu */}
+              {screenZones.map(zone => {
+                const pw = Math.min(composition.width * 0.75, window.innerWidth * 0.85)
+                const ph = Math.min(composition.height * 0.75, window.innerHeight * 0.75)
+                const scaleX = pw / composition.width
+                const scaleY = ph / composition.height
+                return (
+                  <div key={zone.id} className="absolute border border-blue-300 bg-blue-50/30" style={{
+                    left: zone.x * scaleX, top: zone.y * scaleY,
+                    width: zone.width * scaleX, height: zone.height * scaleY,
+                    zIndex: 100
+                  }}>
+                    {/* Widgets persistants */}
+                    {zone.persistentWidgets?.map((widget) => (
+                      <div key={widget.id} className="absolute inset-0 flex items-center justify-center">
+                        {widget.type === 'datetime' && (
+                          <div className="text-center" style={{ fontSize: 14 * scaleX }}>
+                            <div className="font-bold">{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div className="text-xs text-gray-600">{new Date().toLocaleDateString('fr-FR')}</div>
+                          </div>
+                        )}
+                        {widget.type === 'weather' && (
+                          <div className="text-center" style={{ fontSize: 12 * scaleX }}>
+                            <div className="text-2xl">🌤️</div>
+                            <div className="text-xs">{widget.config?.city || 'Paris'}</div>
+                            <div className="font-bold">22°C</div>
+                          </div>
+                        )}
+                        {widget.type === 'logo' && (
+                          <div className="flex items-center justify-center w-full h-full p-2">
+                            {widget.config?.src ? (
+                              <img src={widget.config.src} alt="Logo" className="max-w-full max-h-full object-contain" />
+                            ) : (
+                              <div className="text-gray-400 text-xs">Logo</div>
+                            )}
+                          </div>
+                        )}
+                        {widget.type === 'ticker' && (
+                          <div className="w-full overflow-hidden">
+                            <div className="whitespace-nowrap animate-marquee text-sm">
+                              {widget.config?.text || 'Votre message défilant'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+              
               {elements.map(el => {
                 const pw = Math.min(composition.width * 0.75, window.innerWidth * 0.85)
                 const ph = Math.min(composition.height * 0.75, window.innerHeight * 0.75)
