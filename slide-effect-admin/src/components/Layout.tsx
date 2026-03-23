@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FolderOpen, Image, Video, Headphones,
@@ -8,6 +8,7 @@ import {
   ShieldCheck, Palette, ImageIcon, Wrench, Tag, Users,
   CreditCard, Mail, MapPin, Settings
 } from 'lucide-react'
+import api from '../api'
 
 const navMain = [
   { label: 'Tableau de bord', icon: LayoutDashboard, path: '/' },
@@ -73,7 +74,29 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false)
   const [mediasOpen, setMediasOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [branding, setBranding] = useState({
+    logo_url: '',
+    primary_color: '#f97316',
+    platform_name: 'Slide Effect'
+  })
   const user = JSON.parse(localStorage.getItem('user') || '{"name":"Admin","role":"admin"}')
+
+  useEffect(() => {
+    loadBranding()
+  }, [])
+
+  const loadBranding = async () => {
+    try {
+      const response = await api.get('/admin/settings')
+      setBranding({
+        logo_url: response.data.branding_logo_url || '',
+        primary_color: response.data.branding_primary_color || '#f97316',
+        platform_name: 'Slide Effect'
+      })
+    } catch (error) {
+      console.error('Error loading branding:', error)
+    }
+  }
 
   function logout() {
     localStorage.removeItem('token')
@@ -102,15 +125,39 @@ export default function Layout() {
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Tv2 size={18} className="text-white" />
-              </div>
-              <span className="font-bold text-gray-900 text-sm">Slide Effect</span>
+              {branding.logo_url ? (
+                <img 
+                  src={branding.logo_url} 
+                  alt="Logo" 
+                  className="w-8 h-8 object-contain rounded"
+                />
+              ) : (
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: branding.primary_color }}
+                >
+                  <Tv2 size={18} className="text-white" />
+                </div>
+              )}
+              <span className="font-bold text-gray-900 text-sm">{branding.platform_name}</span>
             </div>
           )}
           {collapsed && (
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mx-auto">
-              <Tv2 size={18} className="text-white" />
+            <div className="mx-auto">
+              {branding.logo_url ? (
+                <img 
+                  src={branding.logo_url} 
+                  alt="Logo" 
+                  className="w-8 h-8 object-contain rounded"
+                />
+              ) : (
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: branding.primary_color }}
+                >
+                  <Tv2 size={18} className="text-white" />
+                </div>
+              )}
             </div>
           )}
           <button onClick={() => setCollapsed(!collapsed)}

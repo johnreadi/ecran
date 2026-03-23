@@ -1,14 +1,38 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ImageIcon, Upload, Trash2, Save, RefreshCw } from 'lucide-react'
+import api from '../../api'
 
 export default function Branding() {
-  const [logo, setLogo] = useState<string>(localStorage.getItem('admin_logo') || '')
-  const [favicon, setFavicon] = useState<string>(localStorage.getItem('admin_favicon') || '')
-  const [siteName, setSiteName] = useState(localStorage.getItem('admin_sitename') || 'Slide Effect')
-  const [tagline, setTagline] = useState(localStorage.getItem('admin_tagline') || 'Digital Signage Platform')
+  const [logo, setLogo] = useState<string>('')
+  const [favicon, setFavicon] = useState<string>('')
+  const [siteName, setSiteName] = useState('Slide Effect')
+  const [tagline, setTagline] = useState('Digital Signage Platform')
+  const [primaryColor, setPrimaryColor] = useState('#f97316')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
   const logoRef = useRef<HTMLInputElement>(null)
   const faviconRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadBranding()
+  }, [])
+
+  const loadBranding = async () => {
+    try {
+      const response = await api.get('/admin/settings')
+      setLogo(response.data.branding_logo_url || '')
+      setPrimaryColor(response.data.branding_primary_color || '#f97316')
+      // Pour l'instant, favicon, siteName et tagline restent en localStorage
+      // ou peuvent être ajoutés à la DB plus tard
+      setFavicon(localStorage.getItem('admin_favicon') || '')
+      setSiteName(localStorage.getItem('admin_sitename') || 'Slide Effect')
+      setTagline(localStorage.getItem('admin_tagline') || 'Digital Signage Platform')
+    } catch (error) {
+      console.error('Error loading branding:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function handleImageUpload(file: File, setter: (v: string) => void) {
     const reader = new FileReader()
@@ -16,13 +40,33 @@ export default function Branding() {
     reader.readAsDataURL(file)
   }
 
-  function save() {
-    localStorage.setItem('admin_logo', logo)
-    localStorage.setItem('admin_favicon', favicon)
-    localStorage.setItem('admin_sitename', siteName)
-    localStorage.setItem('admin_tagline', tagline)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  async function save() {
+    try {
+      // Sauvegarder le logo et la couleur dans la DB
+      await api.put('/admin/settings/branding', {
+        branding_logo_url: logo,
+        branding_primary_color: primaryColor
+      })
+      
+      // Sauvegarder le reste en localStorage
+      localStorage.setItem('admin_favicon', favicon)
+      localStorage.setItem('admin_sitename', siteName)
+      localStorage.setItem('admin_tagline', tagline)
+      
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (error) {
+      console.error('Error saving branding:', error)
+      alert('Erreur lors de la sauvegarde')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -50,7 +94,12 @@ export default function Branding() {
           {logo ? (
             <img src={logo} alt="logo" className="w-8 h-8 object-contain rounded-lg" />
           ) : (
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">SE</div>
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+              style={{ backgroundColor: primaryColor }}
+            >
+              SE
+            </div>
           )}
           <div>
             <div className="font-bold text-gray-900 text-sm">{siteName || 'Slide Effect'}</div>
@@ -119,6 +168,28 @@ export default function Branding() {
               onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], setFavicon)} />
           </div>
         </div>
+      </div>
+
+      {/* Couleur principale */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Couleur principale</h3>
+        <div className="flex items-center gap-4">
+          <input
+            type="color"
+            value={primaryColor}
+            onChange={(e) => setPrimaryColor(e.target.value)}
+            className="h-10 w-20 rounded border"
+          />
+          <input
+            type="text"
+            value={primaryColor}
+            onChange={(e) => setPrimaryColor(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Cette couleur sera utilisée pour l'icône par défaut si aucun logo n'est chargé.
+        </p>
       </div>
 
       {/* Nom et slogan */}
