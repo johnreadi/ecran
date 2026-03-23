@@ -19,12 +19,14 @@ services:
     networks:
       - dokploy-overlay
 
-  # Editor (React app)
-  editor:
+  # Admin Frontend (nouvelle application digital signage)
+  admin:
     build:
-      context: ./slide-effect-app
-      dockerfile: Dockerfile
-    container_name: slide-effect-editor
+      context: ./slide-effect-admin
+      dockerfile: Dockerfile.dokploy
+      args:
+        - VITE_API_URL=https://ecran.ireadi.net/api
+    container_name: slide-effect-admin
     restart: unless-stopped
     expose:
       - "80"
@@ -58,7 +60,7 @@ services:
       - "80"
     depends_on:
       - api
-      - editor
+      - admin
       - player
     networks:
       - dokploy-overlay
