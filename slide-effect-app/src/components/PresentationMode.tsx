@@ -1,7 +1,14 @@
 import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
-import type { Slide } from '../types';
+import type { Slide, SlideElement } from '../types';
+import { DateTimeWidget } from './widgets/DateTimeWidget';
+import { WeatherWidget } from './widgets/WeatherWidget';
+import { MarqueeWidget } from './widgets/MarqueeWidget';
+import { IFrameWidget } from './widgets/IFrameWidget';
+import { QRCodeWidget } from './widgets/QRCodeWidget';
+import { ChartWidget } from './widgets/ChartWidget';
+import { SocialWidget } from './widgets/SocialWidget';
 
 interface PresentationModeProps {
   slides: Slide[];
@@ -56,11 +63,13 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const renderElement = (element: any) => {
+  const renderElement = (element: SlideElement) => {
     const style: React.CSSProperties = {
       position: 'absolute',
       left: `${element.x}%`,
       top: `${element.y}%`,
+      width: `${element.width}%`,
+      height: `${element.height}%`,
       transform: `translate(-50%, -50%) rotate(${element.rotation}deg) scale(${element.scale})`,
       opacity: element.opacity,
       zIndex: element.zIndex,
@@ -77,19 +86,46 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
       textAlign: element.style.textAlign,
     };
 
+    const renderContent = () => {
+      switch (element.type) {
+        case 'text':
+          return <div style={contentStyle}>{element.content}</div>;
+        case 'image':
+          return <img src={element.content} alt="" style={{ maxWidth: '100%', maxHeight: '100%' }} />;
+        case 'video':
+          return <video src={element.content} controls style={{ maxWidth: '100%', maxHeight: '100%' }} />;
+        case 'shape':
+          return <div style={{ ...contentStyle, width: 100, height: 100 }} />;
+        case 'code':
+          return <pre style={{ ...contentStyle, fontFamily: 'monospace' }}><code>{element.content}</code></pre>;
+        case 'datetime':
+          return <DateTimeWidget element={element} />;
+        case 'weather':
+          return <WeatherWidget element={element} />;
+        case 'marquee':
+          return <MarqueeWidget element={element} />;
+        case 'iframe':
+          return <IFrameWidget element={element} />;
+        case 'qrcode':
+          return <QRCodeWidget element={element} />;
+        case 'chart':
+          return <ChartWidget element={element} />;
+        case 'social':
+          return <SocialWidget element={element} />;
+        default:
+          return null;
+      }
+    };
+
     return (
       <motion.div
         key={element.id}
         style={style}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: (element.animation?.delay || 0) / 1000, duration: 0.5 }}
+        transition={{ delay: (element.timeline?.animations?.[0]?.startTime || 0) / 1000, duration: 0.5 }}
       >
-        {element.type === 'text' && <div style={contentStyle}>{element.content}</div>}
-        {element.type === 'image' && <img src={element.content} alt="" style={{ maxWidth: '100%', maxHeight: '100%' }} />}
-        {element.type === 'video' && <video src={element.content} controls style={{ maxWidth: '100%', maxHeight: '100%' }} />}
-        {element.type === 'shape' && <div style={{ ...contentStyle, width: 100, height: 100 }} />}
-        {element.type === 'code' && <pre style={{ ...contentStyle, fontFamily: 'monospace' }}><code>{element.content}</code></pre>}
+        {renderContent()}
       </motion.div>
     );
   };
