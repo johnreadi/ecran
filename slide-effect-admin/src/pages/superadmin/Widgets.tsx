@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Wrench, Clock, Cloud, Globe, QrCode, MessageSquare, Calendar, BarChart2, Save, Eye, EyeOff, Settings } from 'lucide-react'
+import api from '../../api'
 
 interface Widget {
   id: string; name: string; icon: React.ReactNode; enabled: boolean
@@ -35,6 +36,29 @@ export default function Widgets() {
   const [widgets, setWidgets] = useState<Widget[]>(defaultWidgets)
   const [editing, setEditing] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadWidgets()
+  }, [])
+
+  const loadWidgets = async () => {
+    try {
+      const response = await api.get('/admin/settings/widgets')
+      if (response.data && response.data.length > 0) {
+        // Fusionner avec les widgets par défaut pour garder les icônes
+        const savedWidgets = response.data
+        setWidgets(defaultWidgets.map(dw => {
+          const saved = savedWidgets.find((sw: any) => sw.id === dw.id)
+          return saved ? { ...dw, enabled: saved.enabled, config: saved.config } : dw
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading widgets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function toggle(id: string) {
     setWidgets(widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w))
@@ -44,10 +68,25 @@ export default function Widgets() {
     setWidgets(widgets.map(w => w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w))
   }
 
-  function save() {
-    localStorage.setItem('admin_widgets', JSON.stringify(widgets))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  async function save() {
+    try {
+      // Sauvegarder sans les icônes (non sérialisables)
+      const widgetsToSave = widgets.map(({ icon, ...rest }) => rest)
+      await api.put('/admin/settings/widgets', { widgets: widgetsToSave })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (error) {
+      console.error('Error saving widgets:', error)
+      alert('Erreur lors de la sauvegarde')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    )
   }
 
   const categories = [...new Set(widgets.map(w => w.category))]

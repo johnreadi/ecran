@@ -144,4 +144,41 @@ router.put('/branding', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Branding mis à jour' });
 });
 
+// GET /api/admin/settings/widgets - Récupérer la config des widgets
+router.get('/widgets', (req: Request, res: Response) => {
+  const db = getDb();
+  const settings = db.prepare('SELECT widgets_config FROM app_settings WHERE id = ?').get('global') as any;
+  
+  if (!settings?.widgets_config) {
+    res.json([]);
+    return;
+  }
+  
+  try {
+    const widgets = JSON.parse(settings.widgets_config);
+    res.json(widgets);
+  } catch {
+    res.json([]);
+  }
+});
+
+// PUT /api/admin/settings/widgets - Sauvegarder la config des widgets
+router.put('/widgets', (req: Request, res: Response) => {
+  const { widgets } = req.body;
+
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO app_settings (id, widgets_config, updated_at)
+    VALUES ('global', ?, datetime('now'))
+    ON CONFLICT (id) DO UPDATE SET
+      widgets_config = ?,
+      updated_at = datetime('now')
+  `).run(
+    JSON.stringify(widgets),
+    JSON.stringify(widgets)
+  );
+
+  res.json({ success: true, message: 'Configuration des widgets mise à jour' });
+});
+
 export default router;
