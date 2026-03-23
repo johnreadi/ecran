@@ -5,6 +5,9 @@ import { verifyToken } from './auth';
 
 let io: SocketIOServer | null = null;
 
+// Map pour stocker les utilisateurs connectés (userId -> socketId)
+const connectedUsers = new Map<string, string>();
+
 export function initSocketServer(httpServer: HttpServer, corsOrigin: string): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -15,7 +18,8 @@ export function initSocketServer(httpServer: HttpServer, corsOrigin: string): So
 
   io.on('connection', (socket) => {
     const token = socket.handshake.auth.token as string;
-    const type = socket.handshake.auth.type as 'player' | 'admin';
+    const type = socket.handshake.auth.type as 'player' | 'admin' | 'user';
+    const userId = socket.handshake.auth.userId as string;
 
     if (type === 'player' && token) {
       // Authenticate player by its player token
@@ -67,16 +71,72 @@ export function initSocketServer(httpServer: HttpServer, corsOrigin: string): So
         console.log(`📴 Player disconnected: ${player.name}`);
       });
 
-    } else if (type === 'admin' && token) {
-      // Authenticate admin by JWT
+    } else if ((type === 'admin' || type === 'user') && token) {
+      // Authenticate user by JWT
       try {
         const payload = verifyToken(token);
-        if (payload.role === 'admin' || payload.role === 'operator') {
+        const db = getDb();
+        const user = db.prepare('SELECT id, role, status FROM users WHERE id = ?').get(payload.id) as any;
+        
+        if (!user || user.status !== 'active') {
+          socket.disconnect();
+          return;
+        }
+
+        // Store connection
+        connectedUsers.set(user.id, socket.id);
+        socket.join(`user:${user.id}`);
+
+        if (user.role === 'admin') {
           socket.join('admins');
           console.log(`👤 Admin connected: ${payload.email}`);
         } else {
-          socket.disconnect();
+          console.log(`👤 User connected: ${payload.email}`);
         }
+
+        // Join user's room for messages
+        socket.join(`user:${user.id}`);
+
+        // Handle typing indicator
+        socket.on('message:typing', (data: { toUserId: string; isTyping: boolean }) => {
+          io?.to(`user:${data.toUserId}`).emit('message:typing', {
+            fromUserId: user.id,
+            isTyping: data.isTyping,
+          });
+        });
+
+        // Handle new message
+        socket.on('message:send', (data: { toUserId: string; content: string; attachments?: any[] }) => {
+          const messageData = {
+            id: Date.now().toString(),
+            fromUserId: user.id,
+            toUserId: data.toUserId,
+            content: data.content,
+            attachments: data.attachments || [],
+            createdAt: new Date().toISOString(),
+          };
+
+          // Emit to recipient
+          io?.to(`user:${data.toUserId}`).emit('message:new', messageData);
+          
+          // Emit back to sender for confirmation
+          socket.emit('message:sent', messageData);
+        });
+
+        // Handle read receipt
+        socket.on('message:read', (data: { messageId: string; fromUserId: string }) => {
+          io?.to(`user:${data.fromUserId}`).emit('message:read', {
+            messageId: data.messageId,
+            readAt: new Date().toISOString(),
+          });
+        });
+
+        // On disconnect
+        socket.on('disconnect', () => {
+          connectedUsers.delete(user.id);
+          console.log(`📴 User disconnected: ${payload.email}`);
+        });
+
       } catch {
         socket.disconnect();
       }
@@ -110,5 +170,26 @@ export function pushPlaylistToPlayer(playerId: string, playlist: any) {
 export function pushPlaylistToGroup(groupId: string, playlist: any) {
   if (io) {
     io.to(`group:${groupId}`).emit('player:update', { playlist });
+  }
+}
+
+// Helper functions for messaging
+export function isUserOnline(userId: string): boolean {
+  return connectedUsers.has(userId);
+}
+
+export function getOnlineUsers(): string[] {
+  return Array.from(connectedUsers.keys());
+}
+
+export function emitToUser(userId: string, event: string, data: any) {
+  if (io) {
+    io.to(`user:${userId}`).emit(event, data);
+  }
+}
+
+export function broadcastToAdmins(event: string, data: any) {
+  if (io) {
+    io.to('admins').emit(event, data);
   }
 }

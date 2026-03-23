@@ -5,7 +5,8 @@ import {
   FileText, Globe, AppWindow, ListVideo, SquarePlay,
   Calendar, Monitor, ChevronDown, ChevronRight,
   Upload, User, LogOut, ChevronLeft, Tv2,
-  ShieldCheck, Palette, ImageIcon, Wrench, Tag, Users
+  ShieldCheck, Palette, ImageIcon, Wrench, Tag, Users,
+  CreditCard, Mail, MapPin, Settings
 } from 'lucide-react'
 
 const navMain = [
@@ -30,9 +31,14 @@ const navMain = [
 
 const navAdmin = [
   { label: 'Utilisateurs', icon: Users, path: '/utilisateurs' },
+  { label: 'Messagerie', icon: Mail, path: '/messagerie' },
+  { label: 'Géolocalisation', icon: MapPin, path: '/geolocalisation' },
   {
     label: 'Super Admin', icon: ShieldCheck, path: '/superadmin',
     children: [
+      { label: 'Forfaits & Prix', icon: CreditCard, path: '/superadmin/plans' },
+      { label: 'Email & SMTP', icon: Mail, path: '/superadmin/email' },
+      { label: 'Paramètres', icon: Settings, path: '/superadmin/settings' },
       { label: 'Thème & Couleurs', icon: Palette, path: '/superadmin/theme' },
       { label: 'Logo & Identité', icon: ImageIcon, path: '/superadmin/branding' },
       { label: 'Menu & Navigation', icon: Tag, path: '/superadmin/menu' },
@@ -50,6 +56,11 @@ const pageLabels: Record<string, string> = {
   '/programmation': 'Programmation',
   '/ecrans': 'Écrans',
   '/utilisateurs': 'Utilisateurs',
+  '/messagerie': 'Messagerie',
+  '/geolocalisation': 'Géolocalisation',
+  '/superadmin/plans': 'Forfaits & Prix',
+  '/superadmin/email': 'Email & SMTP',
+  '/superadmin/settings': 'Paramètres',
   '/superadmin/theme': 'Thème & Couleurs',
   '/superadmin/branding': 'Logo & Identité',
   '/superadmin/menu': 'Menu & Navigation',

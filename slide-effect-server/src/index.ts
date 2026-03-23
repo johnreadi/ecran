@@ -12,6 +12,12 @@ import playlistsRoutes from './routes/playlists';
 import groupsRoutes from './routes/groups';
 import usersRoutes from './routes/users';
 import assignmentsRoutes from './routes/assignments';
+import plansRoutes from './routes/plans';
+import subscriptionsRoutes from './routes/subscriptions';
+import billingRoutes from './routes/billing';
+import messagesRoutes from './routes/messages';
+import geolocationRoutes from './routes/geolocation';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 const httpServer = createServer(app);
@@ -49,6 +55,12 @@ app.use('/api/playlists', playlistsRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/assignments', assignmentsRoutes);
+app.use('/api/plans', plansRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/geolocation', geolocationRoutes);
+app.use('/api/admin/settings', settingsRoutes);
 
 // Health check (pour Docker et monitoring)
 app.get('/health', (_req, res) => {

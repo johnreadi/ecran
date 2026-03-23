@@ -11,6 +11,11 @@ import CompositionEditor from './pages/CompositionEditor'
 import Programmation from './pages/Programmation'
 import Ecrans from './pages/Ecrans'
 import Utilisateurs from './pages/Utilisateurs'
+import Messagerie from './pages/Messagerie'
+import Geolocalisation from './pages/Geolocalisation'
+import SuperAdminPlans from './pages/superadmin/Plans'
+import SuperAdminEmail from './pages/superadmin/EmailSettings'
+import SuperAdminSettings from './pages/superadmin/Settings'
 import SuperAdminTheme from './pages/superadmin/Theme'
 import SuperAdminBranding from './pages/superadmin/Branding'
 import SuperAdminMenu from './pages/superadmin/MenuNav'
@@ -43,6 +48,11 @@ export default function App() {
           <Route path="programmation" element={<Programmation />} />
           <Route path="ecrans" element={<Ecrans />} />
           <Route path="utilisateurs" element={<RequireAdmin><Utilisateurs /></RequireAdmin>} />
+          <Route path="messagerie" element={<RequireAdmin><Messagerie /></RequireAdmin>} />
+          <Route path="geolocalisation" element={<RequireAdmin><Geolocalisation /></RequireAdmin>} />
+          <Route path="superadmin/plans" element={<RequireAdmin><SuperAdminPlans /></RequireAdmin>} />
+          <Route path="superadmin/email" element={<RequireAdmin><SuperAdminEmail /></RequireAdmin>} />
+          <Route path="superadmin/settings" element={<RequireAdmin><SuperAdminSettings /></RequireAdmin>} />
           <Route path="superadmin/theme" element={<RequireAdmin><SuperAdminTheme /></RequireAdmin>} />
           <Route path="superadmin/branding" element={<RequireAdmin><SuperAdminBranding /></RequireAdmin>} />
           <Route path="superadmin/menu" element={<RequireAdmin><SuperAdminMenu /></RequireAdmin>} />
