@@ -186,12 +186,66 @@ function initSchema() {
   const adminExists = d.prepare('SELECT id FROM users WHERE role = ?').get('admin');
   if (!adminExists) {
     const hash = bcrypt.hashSync('admin123', 10);
-    d.prepare('INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)').run(
+    d.prepare('INSERT INTO users (id, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(),
       'admin@signage.local',
       hash,
-      'admin'
+      'admin',
+      'active'
     );
     console.log('✅ Default admin created: admin@signage.local / admin123');
+  }
+
+  // Create default user if none exists
+  const userExists = d.prepare('SELECT id FROM users WHERE role = ? AND email = ?').get('user', 'user@signage.local');
+  if (!userExists) {
+    const userId = uuidv4();
+    const hash = bcrypt.hashSync('user123', 10);
+    d.prepare('INSERT INTO users (id, email, password_hash, role, status, name, company) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      userId,
+      'user@signage.local',
+      hash,
+      'user',
+      'active',
+      'Utilisateur Test',
+      'Entreprise Test'
+    );
+    
+    // Create workspace for the user
+    const workspaceId = uuidv4();
+    d.prepare('INSERT INTO workspaces (id, user_id, name) VALUES (?, ?, ?)').run(
+      workspaceId,
+      userId,
+      'Mon Espace Test'
+    );
+    
+    // Create a default plan if none exists
+    const planExists = d.prepare('SELECT id FROM plans LIMIT 1').get();
+    if (!planExists) {
+      const planId = uuidv4();
+      d.prepare(`
+        INSERT INTO plans (id, name, description, price_monthly, price_yearly, max_players, max_screens, max_storage_mb, features, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        planId,
+        'Gratuit',
+        'Forfait de démonstration avec limitations',
+        0,
+        0,
+        2,
+        3,
+        500,
+        JSON.stringify(['2 players', '3 écrans', '500 MB stockage', 'Support email']),
+        1
+      );
+      
+      // Create subscription for the user
+      d.prepare(`
+        INSERT INTO subscriptions (id, user_id, plan_id, status, payment_status, current_period_start, current_period_end)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now', '+1 year'))
+      `).run(uuidv4(), userId, planId, 'active', 'paid');
+    }
+    
+    console.log('✅ Default user created: user@signage.local / user123');
   }
 }
