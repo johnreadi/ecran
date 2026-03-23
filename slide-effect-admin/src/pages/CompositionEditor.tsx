@@ -22,6 +22,22 @@ interface ElementAnimation {
   trigger: 'auto' | 'onLoad'
 }
 
+interface ScreenZone {
+  id: string
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  persistentWidgets?: PersistentWidget[]
+}
+
+interface PersistentWidget {
+  id: string
+  type: 'datetime' | 'weather' | 'logo' | 'ticker' | 'custom'
+  config: any
+}
+
 interface Element {
   id: string
   type: 'text' | 'image' | 'shape' | 'video' | 'widget'
@@ -115,6 +131,7 @@ interface Composition {
   height: number
   backgroundColor: string
   elements: Element[]
+  screenZones?: ScreenZone[]
 }
 
 const CANVAS_WIDTH = 1920
@@ -232,7 +249,9 @@ export default function CompositionEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [zoom, setZoom] = useState(0.5)
   const [showGrid, setShowGrid] = useState(true)
-  const [sidebarTab, setSidebarTab] = useState<'templates' | 'media' | 'text' | 'elements' | 'apps' | 'settings'>('templates')
+  const [sidebarTab, setSidebarTab] = useState<'templates' | 'media' | 'text' | 'elements' | 'apps' | 'settings' | 'screenZones'>('templates')
+  const [screenZones, setScreenZones] = useState<ScreenZone[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
   const [history, setHistory] = useState<Element[][]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [isDragging, setIsDragging] = useState(false)
@@ -281,6 +300,7 @@ export default function CompositionEditor() {
       const comp = res.data
       setComposition(comp)
       setElements(comp.elements || [])
+      setScreenZones(comp.screenZones || [])
       saveHistory(comp.elements || [])
     } catch {
       const newComp: Composition = {
@@ -357,6 +377,54 @@ export default function CompositionEditor() {
     setSidebarTab(type === 'text' ? 'text' : type === 'shape' ? 'elements' : 'media')
   }
 
+  // ─── Screen Zones Functions ─────────────────────────────────────────────────
+  const addScreenZone = (name: string, x: number, y: number, width: number, height: number) => {
+    const newZone: ScreenZone = {
+      id: Date.now().toString(),
+      name,
+      x,
+      y,
+      width,
+      height,
+      persistentWidgets: []
+    }
+    setScreenZones([...screenZones, newZone])
+    setSelectedZoneId(newZone.id)
+  }
+
+  const deleteScreenZone = (id: string) => {
+    setScreenZones(zones => zones.filter(z => z.id !== id))
+    if (selectedZoneId === id) setSelectedZoneId(null)
+  }
+
+  const addPersistentWidgetToZone = (zoneId: string, type: PersistentWidget['type']) => {
+    const widget: PersistentWidget = {
+      id: Date.now().toString(),
+      type,
+      config: getDefaultWidgetConfig(type)
+    }
+    setScreenZones(zones => zones.map(z => 
+      z.id === zoneId 
+        ? { ...z, persistentWidgets: [...(z.persistentWidgets || []), widget] }
+        : z
+    ))
+  }
+
+  const getDefaultWidgetConfig = (type: PersistentWidget['type']) => {
+    switch (type) {
+      case 'datetime':
+        return { showDate: true, showTime: true, format: '24h', timezone: 'Europe/Paris' }
+      case 'weather':
+        return { city: 'Paris', unit: 'celsius', showForecast: false }
+      case 'logo':
+        return { src: '', width: 100, height: 100 }
+      case 'ticker':
+        return { text: 'Votre message défilant', speed: 50, direction: 'left' }
+      default:
+        return {}
+    }
+  }
+
   const updateElement = (id: string, updates: Partial<Element>) => {
     const newElements = elements.map(el => el.id === id ? { ...el, ...updates } : el)
     setElements(newElements)
@@ -421,7 +489,7 @@ export default function CompositionEditor() {
     if (!composition) return
     setSaving(true)
     try {
-      const data = { ...composition, elements }
+      const data = { ...composition, elements, screenZones }
       if (id === 'new') await api.post('/compositions', data)
       else await api.put(`/compositions/${id}`, data)
       navigate('/compositions')
@@ -567,6 +635,7 @@ export default function CompositionEditor() {
           <div className="w-px h-5 bg-gray-200 mx-1" />
           <button onClick={() => setShowGrid(!showGrid)} title="Grille" className={`p-2 rounded ${showGrid ? 'bg-gray-200' : 'hover:bg-gray-100'}`}><Grid3X3 size={16} /></button>
           <button onClick={() => setSidebarTab('settings')} title="Fond" className="p-2 hover:bg-gray-100 rounded"><Palette size={16} /></button>
+          <button onClick={() => setSidebarTab('screenZones')} title="Division Écran" className={`p-2 rounded ${sidebarTab === 'screenZones' ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100'}`}><Layout size={16} /></button>
           <button title="Calques" className="p-2 hover:bg-gray-100 rounded"><Layers size={16} /></button>
         </div>
         <div className="flex-1" />
@@ -799,6 +868,122 @@ export default function CompositionEditor() {
             </div>
           )}
 
+          {/* ── DIVISION ÉCRAN ── */}
+          {sidebarTab === 'screenZones' && (
+            <div className="p-3 space-y-4">
+              <h3 className="font-semibold text-gray-800 text-sm">Division Écran</h3>
+              <p className="text-xs text-gray-500">Créez des zones fixes pour afficher des widgets persistants (météo, date, logo...)</p>
+              
+              {/* Boutons de zones prédéfinies */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-600">Zones prédéfinies</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => addScreenZone('Bandeau haut', 0, 0, CANVAS_WIDTH, 100)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Bandeau haut
+                  </button>
+                  <button onClick={() => addScreenZone('Bandeau bas', 0, CANVAS_HEIGHT - 100, CANVAS_WIDTH, 100)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Bandeau bas
+                  </button>
+                  <button onClick={() => addScreenZone('Sidebar gauche', 0, 100, 200, CANVAS_HEIGHT - 200)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Sidebar gauche
+                  </button>
+                  <button onClick={() => addScreenZone('Sidebar droite', CANVAS_WIDTH - 200, 100, 200, CANVAS_HEIGHT - 200)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Sidebar droite
+                  </button>
+                  <button onClick={() => addScreenZone('Zone centrale', 200, 100, CANVAS_WIDTH - 400, CANVAS_HEIGHT - 200)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Zone centrale
+                  </button>
+                  <button onClick={() => addScreenZone('Zone personnalisée', 100, 100, 400, 300)}
+                    className="p-2 bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-lg text-xs">
+                    Zone personnalisée
+                  </button>
+                </div>
+              </div>
+
+              {/* Liste des zones créées */}
+              {screenZones.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600">Zones créées ({screenZones.length})</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {screenZones.map(zone => (
+                      <div key={zone.id} 
+                        className={`p-2 rounded-lg border ${selectedZoneId === zone.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-gray-50'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium">{zone.name}</span>
+                          <button onClick={() => deleteScreenZone(zone.id)} className="text-red-500 hover:text-red-700">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          {zone.width}×{zone.height} @ ({zone.x}, {zone.y})
+                        </div>
+                        
+                        {/* Widgets persistants */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-gray-500">Widgets persistants:</label>
+                          <div className="flex flex-wrap gap-1">
+                            <button onClick={() => addPersistentWidgetToZone(zone.id, 'datetime')}
+                              className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-orange-50">
+                              <Clock size={10} className="inline mr-1" />Date/Heure
+                            </button>
+                            <button onClick={() => addPersistentWidgetToZone(zone.id, 'weather')}
+                              className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-orange-50">
+                              <Cloud size={10} className="inline mr-1" />Météo
+                            </button>
+                            <button onClick={() => addPersistentWidgetToZone(zone.id, 'logo')}
+                              className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-orange-50">
+                              <Image size={10} className="inline mr-1" />Logo
+                            </button>
+                            <button onClick={() => addPersistentWidgetToZone(zone.id, 'ticker')}
+                              className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-orange-50">
+                              <MessageSquare size={10} className="inline mr-1" />Ticker
+                            </button>
+                          </div>
+                          
+                          {/* Liste des widgets ajoutés */}
+                          {zone.persistentWidgets && zone.persistentWidgets.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {zone.persistentWidgets.map(widget => (
+                                <div key={widget.id} className="flex justify-between items-center px-2 py-1 bg-white rounded text-[10px]">
+                                  <span>
+                                    {widget.type === 'datetime' && '⏰ Date/Heure'}
+                                    {widget.type === 'weather' && '🌤️ Météo'}
+                                    {widget.type === 'logo' && '🖼️ Logo'}
+                                    {widget.type === 'ticker' && '📢 Ticker'}
+                                  </span>
+                                  <button onClick={() => {
+                                    setScreenZones(zones => zones.map(z => 
+                                      z.id === zone.id 
+                                        ? { ...z, persistentWidgets: z.persistentWidgets?.filter(w => w.id !== widget.id) || [] }
+                                        : z
+                                    ))
+                                  }} className="text-red-400 hover:text-red-600">
+                                    <X size={10} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t">
+                <p className="text-[10px] text-gray-400">
+                  Les zones d'écran restent fixes lors du défilement des slides.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── PARAMÈTRES ── */}
           {sidebarTab === 'settings' && (
             <div className="p-4 space-y-4">
@@ -851,6 +1036,38 @@ export default function CompositionEditor() {
                 backgroundSize: `${50 * zoom}px ${50 * zoom}px`
               }} />
             )}
+            
+            {/* Zones d'écran (Screen Zones) */}
+            {screenZones.map(zone => (
+              <div key={zone.id}
+                className={`absolute border-2 ${selectedZoneId === zone.id ? 'border-orange-500 bg-orange-500/10' : 'border-blue-400 bg-blue-400/5'}`}
+                style={{
+                  left: zone.x * zoom,
+                  top: zone.y * zoom,
+                  width: zone.width * zoom,
+                  height: zone.height * zoom,
+                  pointerEvents: 'none'
+                }}
+              >
+                <div className={`absolute -top-5 left-0 text-[10px] px-1.5 py-0.5 rounded ${selectedZoneId === zone.id ? 'bg-orange-500 text-white' : 'bg-blue-400 text-white'}`}>
+                  {zone.name}
+                </div>
+                {/* Affichage des widgets persistants */}
+                {zone.persistentWidgets && zone.persistentWidgets.length > 0 && (
+                  <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 p-1">
+                    {zone.persistentWidgets.map(widget => (
+                      <div key={widget.id} className="bg-white/90 rounded px-1.5 py-0.5 text-[8px] shadow">
+                        {widget.type === 'datetime' && '⏰'}
+                        {widget.type === 'weather' && '🌤️'}
+                        {widget.type === 'logo' && '🖼️'}
+                        {widget.type === 'ticker' && '📢'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            
             {elements.map(el => {
               const isShape = el.type === 'shape'
               const needsSvg = isShape && ['triangle', 'star', 'diamond', 'hexagon', 'line', 'arrow'].includes(el.shapeType || '')
