@@ -11,7 +11,7 @@ services:
     expose:
       - "4003"
     volumes:
-      - ./data:/app/data
+      - api-data:/app/data
     environment:
       - PORT=4003
       - JWT_SECRET=${JWT_SECRET:-slide-effect-secret-change-in-prod}
