@@ -1956,10 +1956,95 @@ export default function CompositionEditor() {
                     {el.type === 'video' && el.src && <video src={el.src} className="w-full h-full" muted autoPlay loop style={{ objectFit: (el.style?.objectFit || 'cover') as any }} />}
                     {el.type === 'widget' && (() => {
                       const appInfo = APPS_LIST.find(a => a.id === el.widgetType)
+                      const cfg = el.widgetConfig || {}
                       return (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 bg-blue-50/50">
-                          <div className="text-2xl">{appInfo?.emoji || '📱'}</div>
-                          <span className="text-xs font-medium text-gray-600">{appInfo?.name || 'Widget'}</span>
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 bg-blue-50/50 overflow-hidden">
+                          {/* Date & Heure */}
+                          {el.widgetType === 'clock' && (
+                            <div className="text-center">
+                              <div className="font-bold text-lg" style={{ fontSize: Math.max(24 * scaleX, 14) }}>
+                                {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: cfg.timeFormat === '12h' })}
+                              </div>
+                              {cfg.showDate !== false && (
+                                <div className="text-xs text-gray-600" style={{ fontSize: Math.max(12 * scaleX, 10) }}>
+                                  {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Météo */}
+                          {el.widgetType === 'weather' && (
+                            <div className="text-center">
+                              <div className="text-3xl">🌤️</div>
+                              <div className="font-bold text-lg">22°C</div>
+                              <div className="text-xs text-gray-600">{cfg.city || 'Paris'}</div>
+                            </div>
+                          )}
+                          {/* Page Web */}
+                          {el.widgetType === 'webpage' && cfg.url && (
+                            <div className="w-full h-full flex flex-col">
+                              <div className="bg-gray-100 px-2 py-1 text-[10px] truncate border-b">{cfg.url}</div>
+                              <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
+                                🌐 {cfg.url}
+                              </div>
+                            </div>
+                          )}
+                          {/* Ticker */}
+                          {el.widgetType === 'ticker' && (
+                            <div className="w-full overflow-hidden bg-gray-800 text-white px-2 py-1">
+                              <div className="whitespace-nowrap animate-pulse text-sm">
+                                {cfg.tickerText || 'Votre message défilant...'}
+                              </div>
+                            </div>
+                          )}
+                          {/* RSS */}
+                          {el.widgetType === 'rss' && (
+                            <div className="w-full h-full overflow-y-auto p-2 text-xs">
+                              <div className="font-bold mb-1">📰 {cfg.rssUrl || 'Flux RSS'}</div>
+                              <div className="text-gray-600">Actualités en temps réel...</div>
+                            </div>
+                          )}
+                          {/* YouTube */}
+                          {el.widgetType === 'youtube' && cfg.youtubeUrl && (
+                            <div className="w-full h-full flex items-center justify-center bg-black">
+                              <div className="text-white text-center">
+                                <div className="text-3xl mb-1">▶️</div>
+                                <div className="text-xs">YouTube</div>
+                              </div>
+                            </div>
+                          )}
+                          {/* QR Code */}
+                          {el.widgetType === 'qrcode' && (
+                            <div className="text-center">
+                              <div className="text-4xl">🔲</div>
+                              <div className="text-xs text-gray-600 mt-1">QR Code</div>
+                            </div>
+                          )}
+                          {/* Calendrier */}
+                          {el.widgetType === 'calendar' && (
+                            <div className="text-center">
+                              <div className="text-2xl font-bold">{new Date().getDate()}</div>
+                              <div className="text-xs text-gray-600">
+                                {new Date().toLocaleDateString('fr-FR', { month: 'short' })}
+                              </div>
+                            </div>
+                          )}
+                          {/* Graphiques */}
+                          {el.widgetType === 'charts' && (
+                            <div className="w-full h-full flex items-end justify-center gap-1 p-2">
+                              <div className="w-4 bg-blue-400 rounded-t" style={{ height: '40%' }}></div>
+                              <div className="w-4 bg-blue-500 rounded-t" style={{ height: '70%' }}></div>
+                              <div className="w-4 bg-blue-600 rounded-t" style={{ height: '55%' }}></div>
+                              <div className="w-4 bg-blue-700 rounded-t" style={{ height: '85%' }}></div>
+                            </div>
+                          )}
+                          {/* Par défaut */}
+                          {!['clock', 'weather', 'webpage', 'ticker', 'rss', 'youtube', 'qrcode', 'calendar', 'charts'].includes(el.widgetType || '') && (
+                            <>
+                              <div className="text-2xl">{appInfo?.emoji || '📱'}</div>
+                              <span className="text-xs font-medium text-gray-600">{appInfo?.name || 'Widget'}</span>
+                            </>
+                          )}
                         </div>
                       )
                     })()}
