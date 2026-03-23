@@ -256,6 +256,10 @@ export default function CompositionEditor() {
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [isDraggingZone, setIsDraggingZone] = useState(false)
+  const [dragZoneStart, setDragZoneStart] = useState({ x: 0, y: 0, zoneX: 0, zoneY: 0 })
+  const [isResizingZone, setIsResizingZone] = useState(false)
+  const [resizeZoneStart, setResizeZoneStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [showPreview, setShowPreview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedColor, setSelectedColor] = useState('#3b82f6')
@@ -475,14 +479,37 @@ export default function CompositionEditor() {
   }
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !selectedId) return
-    const newX = (e.clientX - dragStart.x) / zoom
-    const newY = (e.clientY - dragStart.y) / zoom
-    updateElement(selectedId, { x: Math.max(0, newX), y: Math.max(0, newY) })
-  }, [isDragging, selectedId, dragStart, zoom])
+    if (isDragging && selectedId) {
+      const newX = (e.clientX - dragStart.x) / zoom
+      const newY = (e.clientY - dragStart.y) / zoom
+      updateElement(selectedId, { x: Math.max(0, newX), y: Math.max(0, newY) })
+    }
+    // Drag des zones d'écran
+    if (isDraggingZone && selectedZoneId) {
+      const deltaX = (e.clientX - dragZoneStart.x) / zoom
+      const deltaY = (e.clientY - dragZoneStart.y) / zoom
+      setScreenZones(zones => zones.map(z => 
+        z.id === selectedZoneId 
+          ? { ...z, x: Math.max(0, dragZoneStart.zoneX + deltaX), y: Math.max(0, dragZoneStart.zoneY + deltaY) }
+          : z
+      ))
+    }
+    // Redimensionnement des zones
+    if (isResizingZone && selectedZoneId) {
+      const deltaX = (e.clientX - resizeZoneStart.x) / zoom
+      const deltaY = (e.clientY - resizeZoneStart.y) / zoom
+      setScreenZones(zones => zones.map(z => 
+        z.id === selectedZoneId 
+          ? { ...z, width: Math.max(50, resizeZoneStart.width + deltaX), height: Math.max(50, resizeZoneStart.height + deltaY) }
+          : z
+      ))
+    }
+  }, [isDragging, selectedId, dragStart, zoom, isDraggingZone, selectedZoneId, dragZoneStart, isResizingZone, resizeZoneStart])
 
   const handleMouseUp = () => {
     if (isDragging) { setIsDragging(false); saveHistory(elements) }
+    if (isDraggingZone) setIsDraggingZone(false)
+    if (isResizingZone) setIsResizingZone(false)
   }
 
   const save = async () => {
@@ -1040,21 +1067,37 @@ export default function CompositionEditor() {
             {/* Zones d'écran (Screen Zones) */}
             {screenZones.map(zone => (
               <div key={zone.id}
-                className={`absolute border-2 ${selectedZoneId === zone.id ? 'border-orange-500 bg-orange-500/10' : 'border-blue-400 bg-blue-400/5'}`}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  setSelectedZoneId(zone.id)
+                  setIsDraggingZone(true)
+                  setDragZoneStart({ x: e.clientX, y: e.clientY, zoneX: zone.x, zoneY: zone.y })
+                }}
+                className={`absolute border-2 cursor-move ${selectedZoneId === zone.id ? 'border-orange-500 bg-orange-500/10' : 'border-blue-400 bg-blue-400/5'}`}
                 style={{
                   left: zone.x * zoom,
                   top: zone.y * zoom,
                   width: zone.width * zoom,
                   height: zone.height * zoom,
-                  pointerEvents: 'none'
                 }}
               >
                 <div className={`absolute -top-5 left-0 text-[10px] px-1.5 py-0.5 rounded ${selectedZoneId === zone.id ? 'bg-orange-500 text-white' : 'bg-blue-400 text-white'}`}>
                   {zone.name}
                 </div>
+                {/* Handle de redimensionnement */}
+                {selectedZoneId === zone.id && (
+                  <div
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      setIsResizingZone(true)
+                      setResizeZoneStart({ x: e.clientX, y: e.clientY, width: zone.width, height: zone.height })
+                    }}
+                    className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-orange-500 rounded-full cursor-se-resize shadow-lg border-2 border-white"
+                  />
+                )}
                 {/* Affichage des widgets persistants */}
                 {zone.persistentWidgets && zone.persistentWidgets.length > 0 && (
-                  <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 p-1">
+                  <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 p-1 pointer-events-none">
                     {zone.persistentWidgets.map(widget => (
                       <div key={widget.id} className="bg-white/90 rounded px-1.5 py-0.5 text-[8px] shadow">
                         {widget.type === 'datetime' && '⏰'}
