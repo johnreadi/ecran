@@ -5,12 +5,25 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-02-25.clover',
-});
+// Stripe instance - lazy initialization
+let stripe: Stripe | null = null;
+function getStripe(): Stripe | null {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2026-02-25.clover',
+    });
+  }
+  return stripe;
+}
 
 // POST /api/subscriptions/create-checkout - Créer session de paiement
 router.post('/create-checkout', async (req: Request, res: Response) => {
+  const stripeInstance = getStripe();
+  if (!stripeInstance) {
+    res.status(503).json({ error: 'Stripe non configuré' });
+    return;
+  }
+
   const { planId, interval = 'month', userId, email, successUrl, cancelUrl } = req.body;
 
   if (!planId || !userId || !email) {
@@ -42,7 +55,7 @@ router.post('/create-checkout', async (req: Request, res: Response) => {
     if (existingSub?.stripe_customer_id) {
       customerId = existingSub.stripe_customer_id;
     } else {
-      const customer = await stripe.customers.create({
+      const customer = await stripeInstance.customers.create({
         email,
         metadata: { userId },
       });
@@ -50,7 +63,7 @@ router.post('/create-checkout', async (req: Request, res: Response) => {
     }
 
     // Créer la session de checkout
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
@@ -116,6 +129,12 @@ router.get('/me', (req: Request, res: Response) => {
 
 // POST /api/subscriptions/cancel - Annuler l'abonnement
 router.post('/cancel', async (req: Request, res: Response) => {
+  const stripeInstance = getStripe();
+  if (!stripeInstance) {
+    res.status(503).json({ error: 'Stripe non configuré' });
+    return;
+  }
+
   const { userId } = req.body;
   
   const db = getDb();
@@ -127,7 +146,7 @@ router.post('/cancel', async (req: Request, res: Response) => {
   }
 
   try {
-    await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    await stripeInstance.subscriptions.update(sub.stripe_subscription_id, {
       cancel_at_period_end: true,
     });
 
@@ -146,6 +165,12 @@ router.post('/cancel', async (req: Request, res: Response) => {
 
 // POST /api/subscriptions/reactivate - Réactiver l'abonnement
 router.post('/reactivate', async (req: Request, res: Response) => {
+  const stripeInstance = getStripe();
+  if (!stripeInstance) {
+    res.status(503).json({ error: 'Stripe non configuré' });
+    return;
+  }
+
   const { userId } = req.body;
   
   const db = getDb();
@@ -157,7 +182,7 @@ router.post('/reactivate', async (req: Request, res: Response) => {
   }
 
   try {
-    await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    await stripeInstance.subscriptions.update(sub.stripe_subscription_id, {
       cancel_at_period_end: false,
     });
 
@@ -176,13 +201,19 @@ router.post('/reactivate', async (req: Request, res: Response) => {
 
 // POST /api/subscriptions/webhook - Webhook Stripe
 router.post('/webhook', async (req: Request, res: Response) => {
+  const stripeInstance = getStripe();
+  if (!stripeInstance) {
+    res.status(503).json({ error: 'Stripe non configuré' });
+    return;
+  }
+
   const sig = req.headers['stripe-signature'] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    event = stripeInstance.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err: any) {
     console.error('Webhook signature verification failed:', err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
