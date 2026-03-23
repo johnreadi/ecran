@@ -1954,38 +1954,15 @@ export default function CompositionEditor() {
                     {el.type === 'text' && <div className="w-full h-full flex items-center p-2" style={{ justifyContent: el.style?.textAlign === 'left' ? 'flex-start' : el.style?.textAlign === 'right' ? 'flex-end' : 'center' }}>{el.content}</div>}
                     {el.type === 'image' && el.src && <img src={el.src} alt="" className="w-full h-full" style={{ objectFit: (el.style?.objectFit || 'cover') as any }} />}
                     {el.type === 'video' && el.src && <video src={el.src} className="w-full h-full" muted autoPlay loop style={{ objectFit: (el.style?.objectFit || 'cover') as any }} />}
-                    {el.type === 'widget' && (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 bg-blue-50/50">
-                        <div className="text-2xl">
-                          {el.widgetType === 'datetime' && '⏰'}
-                          {el.widgetType === 'weather' && '🌤️'}
-                          {el.widgetType === 'ticker' && '📢'}
-                          {el.widgetType === 'rss' && '📰'}
-                          {el.widgetType === 'calendar' && '📅'}
-                          {el.widgetType === 'qrcode' && '🔲'}
-                          {el.widgetType === 'youtube' && '▶️'}
-                          {el.widgetType === 'webpage' && '🌐'}
-                          {el.widgetType === 'twitter' && '🐦'}
-                          {el.widgetType === 'chart' && '📊'}
-                          {el.widgetType === 'social' && '💬'}
-                          {!['datetime', 'weather', 'ticker', 'rss', 'calendar', 'qrcode', 'youtube', 'webpage', 'twitter', 'chart', 'social'].includes(el.widgetType || '') && '📱'}
+                    {el.type === 'widget' && (() => {
+                      const appInfo = APPS_LIST.find(a => a.id === el.widgetType)
+                      return (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 bg-blue-50/50">
+                          <div className="text-2xl">{appInfo?.emoji || '📱'}</div>
+                          <span className="text-xs font-medium text-gray-600">{appInfo?.name || 'Widget'}</span>
                         </div>
-                        <span className="text-xs font-medium text-gray-600">
-                          {el.widgetType === 'datetime' && 'Date & Heure'}
-                          {el.widgetType === 'weather' && 'Météo'}
-                          {el.widgetType === 'ticker' && 'Ticker'}
-                          {el.widgetType === 'rss' && 'RSS'}
-                          {el.widgetType === 'calendar' && 'Calendrier'}
-                          {el.widgetType === 'qrcode' && 'QR Code'}
-                          {el.widgetType === 'youtube' && 'YouTube'}
-                          {el.widgetType === 'webpage' && 'Page Web'}
-                          {el.widgetType === 'twitter' && 'Twitter'}
-                          {el.widgetType === 'chart' && 'Graphique'}
-                          {el.widgetType === 'social' && 'Social'}
-                          {!['datetime', 'weather', 'ticker', 'rss', 'calendar', 'qrcode', 'youtube', 'webpage', 'twitter', 'chart', 'social'].includes(el.widgetType || '') && 'Widget'}
-                        </span>
-                      </div>
-                    )}
+                      )
+                    })()}
                     {needsSvg && null}
                   </div>
                 )
