@@ -22,11 +22,11 @@ export default function Branding() {
       const response = await api.get('/admin/settings')
       setLogo(response.data.branding_logo_url || '')
       setPrimaryColor(response.data.branding_primary_color || '#f97316')
-      // Pour l'instant, favicon, siteName et tagline restent en localStorage
-      // ou peuvent être ajoutés à la DB plus tard
+      // Nom et slogan depuis la DB
+      setSiteName(response.data.platform_name || 'Slide Effect')
+      setTagline(response.data.platform_tagline || 'Digital Signage Platform')
+      // Favicon reste en localStorage pour l'instant
       setFavicon(localStorage.getItem('admin_favicon') || '')
-      setSiteName(localStorage.getItem('admin_sitename') || 'Slide Effect')
-      setTagline(localStorage.getItem('admin_tagline') || 'Digital Signage Platform')
     } catch (error) {
       console.error('Error loading branding:', error)
     } finally {
@@ -42,22 +42,16 @@ export default function Branding() {
 
   async function save() {
     try {
-      // Sauvegarder le logo et la couleur dans la DB
+      // Sauvegarder TOUT dans la DB (plus de localStorage pour nom/slogan)
       await api.put('/admin/settings/branding', {
         branding_logo_url: logo,
-        branding_primary_color: primaryColor
+        branding_primary_color: primaryColor,
+        platform_name: siteName,
+        platform_tagline: tagline
       })
       
-      // Sauvegarder le reste en localStorage (pour que Login.tsx puisse y accéder)
+      // Favicon uniquement en localStorage
       localStorage.setItem('admin_favicon', favicon)
-      localStorage.setItem('admin_sitename', siteName)
-      localStorage.setItem('admin_tagline', tagline)
-      
-      // Déclencher un événement pour notifier les autres composants
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'admin_sitename',
-        newValue: siteName
-      }))
       
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)

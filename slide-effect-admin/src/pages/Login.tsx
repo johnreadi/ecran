@@ -26,8 +26,8 @@ export default function Login() {
       setBranding({
         logo_url: response.data.branding_logo_url || '',
         primary_color: response.data.branding_primary_color || '#f97316',
-        platform_name: localStorage.getItem('admin_sitename') || 'Slide Effect',
-        tagline: localStorage.getItem('admin_tagline') || 'Digital Signage Platform'
+        platform_name: response.data.platform_name || 'Slide Effect',
+        tagline: response.data.platform_tagline || 'Digital Signage Platform'
       })
     } catch (error) {
       console.error('Error loading branding:', error)

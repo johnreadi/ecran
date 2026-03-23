@@ -118,21 +118,27 @@ router.post('/smtp/test', async (req: Request, res: Response) => {
 
 // PUT /api/admin/settings/branding - Branding
 router.put('/branding', (req: Request, res: Response) => {
-  const { branding_logo_url, branding_primary_color } = req.body;
+  const { branding_logo_url, branding_primary_color, platform_name, platform_tagline } = req.body;
 
   const db = getDb();
   db.prepare(`
-    INSERT INTO app_settings (id, branding_logo_url, branding_primary_color, updated_at)
-    VALUES ('global', ?, ?, datetime('now'))
+    INSERT INTO app_settings (id, branding_logo_url, branding_primary_color, platform_name, platform_tagline, updated_at)
+    VALUES ('global', ?, ?, ?, ?, datetime('now'))
     ON CONFLICT (id) DO UPDATE SET
       branding_logo_url = COALESCE(?, branding_logo_url),
       branding_primary_color = COALESCE(?, branding_primary_color),
+      platform_name = COALESCE(?, platform_name),
+      platform_tagline = COALESCE(?, platform_tagline),
       updated_at = datetime('now')
   `).run(
     branding_logo_url,
     branding_primary_color,
+    platform_name,
+    platform_tagline,
     branding_logo_url,
-    branding_primary_color
+    branding_primary_color,
+    platform_name,
+    platform_tagline
   );
 
   res.json({ success: true, message: 'Branding mis à jour' });

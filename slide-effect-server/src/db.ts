@@ -168,6 +168,8 @@ function initSchema() {
       smtp_secure INTEGER DEFAULT 0,
       branding_logo_url TEXT,
       branding_primary_color TEXT DEFAULT '#6366f1',
+      platform_name TEXT DEFAULT 'Slide Effect',
+      platform_tagline TEXT DEFAULT 'Digital Signage Platform',
       updated_at TEXT DEFAULT (datetime('now'))
     );
   `);

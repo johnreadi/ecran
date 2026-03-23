@@ -77,7 +77,8 @@ export default function Layout() {
   const [branding, setBranding] = useState({
     logo_url: '',
     primary_color: '#f97316',
-    platform_name: 'Slide Effect'
+    platform_name: 'Slide Effect',
+    platform_tagline: 'Digital Signage Platform'
   })
   const user = JSON.parse(localStorage.getItem('user') || '{"name":"Admin","role":"admin"}')
 
@@ -91,7 +92,8 @@ export default function Layout() {
       setBranding({
         logo_url: response.data.branding_logo_url || '',
         primary_color: response.data.branding_primary_color || '#f97316',
-        platform_name: 'Slide Effect'
+        platform_name: response.data.platform_name || 'Slide Effect',
+        platform_tagline: response.data.platform_tagline || 'Digital Signage Platform'
       })
     } catch (error) {
       console.error('Error loading branding:', error)
