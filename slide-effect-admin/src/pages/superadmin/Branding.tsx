@@ -48,10 +48,16 @@ export default function Branding() {
         branding_primary_color: primaryColor
       })
       
-      // Sauvegarder le reste en localStorage
+      // Sauvegarder le reste en localStorage (pour que Login.tsx puisse y accéder)
       localStorage.setItem('admin_favicon', favicon)
       localStorage.setItem('admin_sitename', siteName)
       localStorage.setItem('admin_tagline', tagline)
+      
+      // Déclencher un événement pour notifier les autres composants
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'admin_sitename',
+        newValue: siteName
+      }))
       
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)

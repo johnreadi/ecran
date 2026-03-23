@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { Tv2 } from 'lucide-react'
@@ -8,7 +8,31 @@ export default function Login() {
   const [password, setPassword] = useState('admin123')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [branding, setBranding] = useState({
+    logo_url: '',
+    primary_color: '#f97316',
+    platform_name: 'Slide Effect',
+    tagline: 'Digital Signage Platform'
+  })
   const navigate = useNavigate()
+
+  useEffect(() => {
+    loadBranding()
+  }, [])
+
+  const loadBranding = async () => {
+    try {
+      const response = await api.get('/admin/settings')
+      setBranding({
+        logo_url: response.data.branding_logo_url || '',
+        primary_color: response.data.branding_primary_color || '#f97316',
+        platform_name: localStorage.getItem('admin_sitename') || 'Slide Effect',
+        tagline: localStorage.getItem('admin_tagline') || 'Digital Signage Platform'
+      })
+    } catch (error) {
+      console.error('Error loading branding:', error)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,12 +56,23 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-            <Tv2 size={22} className="text-white" />
-          </div>
+          {branding.logo_url ? (
+            <img 
+              src={branding.logo_url} 
+              alt="Logo" 
+              className="w-10 h-10 object-contain rounded-xl"
+            />
+          ) : (
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: branding.primary_color }}
+            >
+              <Tv2 size={22} className="text-white" />
+            </div>
+          )}
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Slide Effect</h1>
-            <p className="text-xs text-gray-400">Digital Signage Platform</p>
+            <h1 className="text-lg font-bold text-gray-900">{branding.platform_name}</h1>
+            <p className="text-xs text-gray-400">{branding.tagline}</p>
           </div>
         </div>
 
@@ -68,7 +103,15 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+            className="w-full text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+            style={{ backgroundColor: branding.primary_color }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = branding.primary_color
+              e.currentTarget.style.filter = 'brightness(0.9)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = 'brightness(1)'
+            }}
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
