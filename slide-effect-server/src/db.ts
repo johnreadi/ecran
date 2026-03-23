@@ -183,6 +183,8 @@ function initSchema() {
   try { d.exec(`ALTER TABLE users ADD COLUMN last_login TEXT`) } catch {}
   try { d.exec(`ALTER TABLE players ADD COLUMN workspace_id TEXT REFERENCES workspaces(id) ON DELETE SET NULL`) } catch {}
   try { d.exec(`ALTER TABLE playlists ADD COLUMN workspace_id TEXT REFERENCES workspaces(id) ON DELETE CASCADE`) } catch {}
+  try { d.exec(`ALTER TABLE app_settings ADD COLUMN platform_name TEXT DEFAULT 'Slide Effect'`) } catch {}
+  try { d.exec(`ALTER TABLE app_settings ADD COLUMN platform_tagline TEXT DEFAULT 'Digital Signage Platform'`) } catch {}
 
   // Create default admin if none exists
   const adminExists = d.prepare('SELECT id FROM users WHERE role = ?').get('admin');
