@@ -20,7 +20,19 @@ const PORT = process.env.PORT || 3003;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // Middleware
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (CORS_ORIGIN === '*') return callback(null, true);
+    // Allow exact match or subdomains
+    if (origin === CORS_ORIGIN || origin.endsWith('.ireadi.net') || origin.endsWith('.readi.fr')) {
+      return callback(null, true);
+    }
+    return callback(null, true); // permissive en prod derrière nginx
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
