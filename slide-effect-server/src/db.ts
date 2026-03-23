@@ -131,10 +131,14 @@ function initSchema() {
       id TEXT PRIMARY KEY,
       from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       to_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      parent_id TEXT REFERENCES messages(id) ON DELETE CASCADE,
       content TEXT NOT NULL,
       attachments TEXT DEFAULT '[]',
       is_read INTEGER DEFAULT 0,
       read_at TEXT,
+      is_archived INTEGER DEFAULT 0,
+      archived_at TEXT,
+      calendar_event TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -187,6 +191,10 @@ function initSchema() {
   try { d.exec(`ALTER TABLE app_settings ADD COLUMN platform_name TEXT DEFAULT 'Slide Effect'`) } catch {}
   try { d.exec(`ALTER TABLE app_settings ADD COLUMN platform_tagline TEXT DEFAULT 'Digital Signage Platform'`) } catch {}
   try { d.exec(`ALTER TABLE app_settings ADD COLUMN widgets_config TEXT DEFAULT '[]'`) } catch {}
+  try { d.exec(`ALTER TABLE messages ADD COLUMN parent_id TEXT REFERENCES messages(id) ON DELETE CASCADE`) } catch {}
+  try { d.exec(`ALTER TABLE messages ADD COLUMN is_archived INTEGER DEFAULT 0`) } catch {}
+  try { d.exec(`ALTER TABLE messages ADD COLUMN archived_at TEXT`) } catch {}
+  try { d.exec(`ALTER TABLE messages ADD COLUMN calendar_event TEXT`) } catch {}
 
   // Create default admin if none exists
   const adminExists = d.prepare('SELECT id FROM users WHERE role = ?').get('admin');

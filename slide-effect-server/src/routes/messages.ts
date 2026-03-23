@@ -85,9 +85,9 @@ router.get('/:userId', (req: Request, res: Response) => {
   })));
 });
 
-// POST /api/messages - Envoyer un message
+// POST /api/messages - Envoyer un message (nouveau ou réponse)
 router.post('/', upload.array('attachments', 5), (req: Request, res: Response) => {
-  const { fromUserId, toUserId, content } = req.body;
+  const { fromUserId, toUserId, content, parentId, calendarEvent } = req.body;
   const files = req.files as Express.Multer.File[];
 
   if (!fromUserId || !toUserId || !content) {
@@ -106,9 +106,9 @@ router.post('/', upload.array('attachments', 5), (req: Request, res: Response) =
   })) || [];
 
   db.prepare(`
-    INSERT INTO messages (id, from_user_id, to_user_id, content, attachments, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
-  `).run(id, fromUserId, toUserId, content, JSON.stringify(attachments));
+    INSERT INTO messages (id, from_user_id, to_user_id, parent_id, content, attachments, calendar_event, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `).run(id, fromUserId, toUserId, parentId || null, content, JSON.stringify(attachments), calendarEvent || null);
 
   const message = db.prepare(`
     SELECT m.*, u_from.name as from_name, u_to.name as to_name
@@ -121,6 +121,7 @@ router.post('/', upload.array('attachments', 5), (req: Request, res: Response) =
   res.status(201).json({
     ...message,
     attachments: JSON.parse(message.attachments || '[]'),
+    calendar_event: message.calendar_event ? JSON.parse(message.calendar_event) : null,
   });
 });
 
@@ -191,10 +192,62 @@ router.get('/unread/count', (req: Request, res: Response) => {
   const db = getDb();
   const count = db.prepare(`
     SELECT COUNT(*) as count FROM messages 
-    WHERE to_user_id = ? AND is_read = 0
+    WHERE to_user_id = ? AND is_read = 0 AND is_archived = 0
   `).get(userId);
 
   res.json(count);
+});
+
+// PUT /api/messages/:id/archive - Archiver/désarchiver un message
+router.put('/:id/archive', (req: Request, res: Response) => {
+  const { userId, archive } = req.body;
+  
+  const db = getDb();
+  const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id) as any;
+  
+  if (!message) {
+    res.status(404).json({ error: 'Message non trouvé' });
+    return;
+  }
+
+  // Seul le destinataire peut archiver
+  if (message.to_user_id !== userId) {
+    res.status(403).json({ error: 'Non autorisé' });
+    return;
+  }
+
+  db.prepare(`
+    UPDATE messages SET is_archived = ?, archived_at = ? WHERE id = ?
+  `).run(archive ? 1 : 0, archive ? new Date().toISOString() : null, req.params.id);
+
+  res.json({ success: true, archived: archive });
+});
+
+// GET /api/messages/archived/list - Liste des messages archivés
+router.get('/archived/list', (req: Request, res: Response) => {
+  const userId = req.query.userId as string;
+  if (!userId) {
+    res.status(400).json({ error: 'userId requis' });
+    return;
+  }
+
+  const db = getDb();
+  const messages = db.prepare(`
+    SELECT m.*, 
+           u_from.name as from_name, 
+           u_to.name as to_name
+    FROM messages m
+    JOIN users u_from ON m.from_user_id = u_from.id
+    JOIN users u_to ON m.to_user_id = u_to.id
+    WHERE m.to_user_id = ? AND m.is_archived = 1
+    ORDER BY m.created_at DESC
+  `).all(userId);
+
+  res.json(messages.map((m: any) => ({
+    ...m,
+    attachments: JSON.parse(m.attachments || '[]'),
+    calendar_event: m.calendar_event ? JSON.parse(m.calendar_event) : null,
+  })));
 });
 
 export default router;
