@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import api from '../api'
 import {
   UserPlus, Search, MoreVertical, Shield, ShieldOff,
@@ -23,6 +23,89 @@ const STATUS_COLORS: Record<string, string> = {
   banned: 'bg-red-100 text-red-700',
   suspended: 'bg-yellow-100 text-yellow-700',
 }
+
+// Composant Modal extrait pour éviter les re-renders
+interface ModalProps {
+  title: string;
+  onClose: () => void;
+  onSave: () => void;
+  form: { email: string; password: string; name: string; role: string; workspace: string };
+  setForm: React.Dispatch<React.SetStateAction<{ email: string; password: string; name: string; role: string; workspace: string }>>;
+  error: string;
+  saving: boolean;
+  isEdit: boolean;
+}
+
+const UserModal = memo(({ title, onClose, onSave, form, setForm, error, saving, isEdit }: ModalProps) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+      </div>
+      {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+          <input 
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={form.name} 
+            onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
+            placeholder="Jean Dupont" 
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input 
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={form.email} 
+            onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
+            placeholder="email@domaine.com" 
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe {isEdit ? '(laisser vide = inchangé)' : '*'}</label>
+          <input 
+            type="password" 
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={form.password} 
+            onChange={e => setForm(p => ({ ...p, password: e.target.value }))} 
+            placeholder="••••••••" 
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+            <select 
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={form.role} 
+              onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+            >
+              <option value="operator">Opérateur</option>
+              <option value="admin">Super Admin</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Workspace</label>
+            <input 
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={form.workspace} 
+              onChange={e => setForm(p => ({ ...p, workspace: e.target.value }))} 
+              placeholder="default" 
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3 mt-6">
+        <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">Annuler</button>
+        <button onClick={onSave} disabled={saving}
+          className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50">
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
+        </button>
+      </div>
+    </div>
+  </div>
+));
 
 export default function Utilisateurs() {
   const [users, setUsers] = useState<User[]>([])
@@ -127,57 +210,6 @@ export default function Utilisateurs() {
     suspended: users.filter(u => u.status === 'suspended').length,
     admins: users.filter(u => u.role === 'admin').length,
   }
-
-  const Modal = ({ title, onClose, onSave }: { title: string, onClose: () => void, onSave: () => void }) => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-        </div>
-        {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-            <input className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Jean Dupont" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-            <input className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="email@domaine.com" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe {showEdit ? '(laisser vide = inchangé)' : '*'}</label>
-            <input type="password" className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
-              <select className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-                <option value="operator">Opérateur</option>
-                <option value="admin">Super Admin</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Workspace</label>
-              <input className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                value={form.workspace} onChange={e => setForm(p => ({ ...p, workspace: e.target.value }))} placeholder="default" />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">Annuler</button>
-          <button onClick={onSave} disabled={saving}
-            className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50">
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 
   return (
     <div className="p-6">
@@ -326,12 +358,30 @@ export default function Utilisateurs() {
 
       {/* Create Modal */}
       {showCreate && (
-        <Modal title="Nouvel utilisateur" onClose={() => setShowCreate(false)} onSave={handleCreate} />
+        <UserModal 
+          title="Nouvel utilisateur" 
+          onClose={() => setShowCreate(false)} 
+          onSave={handleCreate}
+          form={form}
+          setForm={setForm}
+          error={error}
+          saving={saving}
+          isEdit={false}
+        />
       )}
 
       {/* Edit Modal */}
       {showEdit && (
-        <Modal title={`Modifier : ${showEdit.email}`} onClose={() => setShowEdit(null)} onSave={handleEdit} />
+        <UserModal 
+          title={`Modifier : ${showEdit.email}`} 
+          onClose={() => setShowEdit(null)} 
+          onSave={handleEdit}
+          form={form}
+          setForm={setForm}
+          error={error}
+          saving={saving}
+          isEdit={true}
+        />
       )}
 
       {/* Overlay to close menus */}
