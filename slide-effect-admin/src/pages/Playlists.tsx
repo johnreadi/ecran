@@ -183,7 +183,7 @@ export default function Playlists() {
                       <MoreVertical size={16} />
                     </button>
                     {menuOpen === p.id && (
-                      <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-xl shadow-xl z-10 min-w-[150px] py-1">
+                      <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-[150px] py-1">
                         <button onClick={() => openEdit(p)}
                           className="w-full flex items-center gap-2 px-4 py-2 text-xs text-gray-600 hover:bg-gray-50">
                           <Edit size={13} /> Modifier

@@ -214,7 +214,7 @@ export default function Programmation() {
                       <MoreVertical size={16} />
                     </button>
                     {menuOpen === s.id && (
-                      <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-xl shadow-xl z-10 min-w-[160px] py-1">
+                      <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-[160px] py-1">
                         <button onClick={() => openEdit(s)} className="w-full flex items-center gap-2 px-4 py-2 text-xs text-gray-600 hover:bg-gray-50"><Edit size={13} /> Modifier</button>
                         <button onClick={() => duplicate(s)} className="w-full flex items-center gap-2 px-4 py-2 text-xs text-gray-600 hover:bg-gray-50"><Copy size={13} /> Dupliquer</button>
                         <div className="border-t my-1" />

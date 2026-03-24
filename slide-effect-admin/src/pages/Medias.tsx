@@ -157,7 +157,7 @@ export default function Medias() {
                   <MoreVertical size={14} />
                 </button>
                 {menuOpen === m.id && (
-                  <div className="absolute top-8 right-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[130px]" onClick={e => e.stopPropagation()}>
+                  <div className="absolute top-8 right-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[130px]" onClick={e => e.stopPropagation()}>
                     {m.url && <button onClick={() => { setPreview(m); setMenuOpen(null) }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"><Eye size={13} /> Aperçu</button>}
                     {m.url && <a href={m.url} download={m.name}

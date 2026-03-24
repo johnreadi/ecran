@@ -116,7 +116,7 @@ export default function Ecrans() {
                     <MoreVertical size={16} />
                   </button>
                   {menuOpen === p.id && (
-                    <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px]">
+                    <div className="absolute right-6 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
                       <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"><Edit size={13} /> Modifier</button>
                       <button onClick={() => { setAssignModal(p); setMenuOpen(null) }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"><Send size={13} /> Assigner playlist</button>
