@@ -96,6 +96,9 @@ interface Element {
     videoUrl?: string
     videoLoop?: boolean
     videoMuted?: boolean
+    // Style général
+    iconEmoji?: string
+    showIcon?: boolean
   }
   animation?: ElementAnimation
   style?: {
@@ -1156,15 +1159,26 @@ export default function CompositionEditor() {
                     <video src={el.src} className="w-full h-full" style={{ objectFit: (el.style?.objectFit || 'cover') as any }} muted autoPlay loop />
                   )}
                   {el.type === 'widget' && appInfo && (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-                      <div className="rounded-full p-2" style={{ backgroundColor: appInfo.color + '33' }}>
-                        <appInfo.icon size={Math.max(18 * zoom, 14)} style={{ color: appInfo.color }} />
-                      </div>
-                      <span className="font-semibold text-center leading-tight" style={{ fontSize: Math.max(10 * zoom, 8), color: appInfo.color }}>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2" 
+                      style={{ 
+                        color: el.style?.color || appInfo.color,
+                        fontSize: (el.style?.fontSize || 16) * zoom,
+                        fontFamily: el.style?.fontFamily,
+                        fontWeight: el.style?.fontWeight,
+                        fontStyle: el.style?.fontStyle,
+                        textDecoration: el.style?.textDecoration,
+                        textAlign: el.style?.textAlign as any,
+                        backgroundColor: el.style?.backgroundColor || appInfo.color + '22'
+                      }}>
+                      {el.widgetConfig?.showIcon !== false && (
+                        <div className="rounded-full p-2" style={{ backgroundColor: (el.style?.color || appInfo.color) + '33' }}>
+                          <span style={{ fontSize: Math.max(24 * zoom, 16) }}>
+                            {el.widgetConfig?.iconEmoji || appInfo.emoji}
+                          </span>
+                        </div>
+                      )}
+                      <span className="font-semibold text-center leading-tight">
                         {appInfo.name}
-                      </span>
-                      <span className="text-center opacity-60 leading-tight" style={{ fontSize: Math.max(8 * zoom, 7) }}>
-                        {appInfo.emoji}
                       </span>
                     </div>
                   )}
@@ -1521,22 +1535,105 @@ export default function CompositionEditor() {
                       </div>
                     </div>)}
 
-                    {/* Couleur du widget */}
+                    {/* ── Style du widget ── */}
                     <div className="border-t border-gray-100 pt-2.5 mt-2.5">
-                      <label className={labelCls}>Couleur du widget</label>
-                      <div className="flex gap-2">
-                        <input type="color" value={selectedElement.style?.color || (wInfo?.color || '#3b82f6')}
-                          onChange={e => updateStyle(selectedId!, { color: e.target.value })}
-                          className="h-8 w-12 rounded border border-gray-200 cursor-pointer" />
-                        <input type="color" value={selectedElement.style?.backgroundColor === 'transparent' ? '#ffffff' : (selectedElement.style?.backgroundColor || '#ffffff')}
-                          onChange={e => updateStyle(selectedId!, { backgroundColor: e.target.value })}
-                          className="h-8 w-12 rounded border border-gray-200 cursor-pointer" />
-                        <div className="flex-1 flex flex-col justify-center">
-                          <span className="text-[9px] text-gray-400 leading-none">Texte</span>
-                          <span className="text-[9px] text-gray-400 leading-none mt-1">Fond</span>
+                      <label className={labelCls}>Style du widget</label>
+                      
+                      {/* Taille de police */}
+                      <div className="mb-2.5">
+                        <label className="text-[10px] text-gray-500">Taille du texte: {selectedElement.style?.fontSize || 16}px</label>
+                        <input type="range" min="8" max="72" step="1" 
+                          value={selectedElement.style?.fontSize || 16} 
+                          onChange={e => updateStyle(selectedId!, { fontSize: parseInt(e.target.value) })}
+                          className="w-full accent-orange-500" />
+                      </div>
+                      
+                      {/* Police */}
+                      <div className="mb-2.5">
+                        <label className="text-[10px] text-gray-500">Police</label>
+                        <select value={selectedElement.style?.fontFamily || 'Arial'}
+                          onChange={e => updateStyle(selectedId!, { fontFamily: e.target.value })}
+                          className={`${inputCls} text-xs`}>
+                          {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
+                      
+                      {/* Style du texte */}
+                      <div className="mb-2.5">
+                        <label className="text-[10px] text-gray-500">Style</label>
+                        <div className="flex gap-1">
+                          <button onClick={() => updateStyle(selectedId!, { fontWeight: selectedElement.style?.fontWeight === 'bold' ? 'normal' : 'bold' })}
+                            className={`flex-1 py-1 text-xs border rounded ${selectedElement.style?.fontWeight === 'bold' ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            <Bold size={12} className="inline" />
+                          </button>
+                          <button onClick={() => updateStyle(selectedId!, { fontStyle: selectedElement.style?.fontStyle === 'italic' ? 'normal' : 'italic' })}
+                            className={`flex-1 py-1 text-xs border rounded ${selectedElement.style?.fontStyle === 'italic' ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            <Italic size={12} className="inline" />
+                          </button>
+                          <button onClick={() => updateStyle(selectedId!, { textDecoration: selectedElement.style?.textDecoration === 'underline' ? 'none' : 'underline' })}
+                            className={`flex-1 py-1 text-xs border rounded ${selectedElement.style?.textDecoration === 'underline' ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            <Underline size={12} className="inline" />
+                          </button>
                         </div>
-                        <button onClick={() => updateStyle(selectedId!, { backgroundColor: 'transparent' })}
-                          className="px-2 py-1 text-[9px] border border-gray-200 rounded hover:bg-gray-50">Transparent</button>
+                      </div>
+                      
+                      {/* Alignement */}
+                      <div className="mb-2.5">
+                        <label className="text-[10px] text-gray-500">Alignement</label>
+                        <div className="flex gap-1">
+                          {(['left', 'center', 'right'] as const).map(align => (
+                            <button key={align} onClick={() => updateStyle(selectedId!, { textAlign: align })}
+                              className={`flex-1 py-1 text-xs border rounded ${(selectedElement.style?.textAlign || 'center') === align ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
+                              {align === 'left' && <AlignLeft size={12} className="inline" />}
+                              {align === 'center' && <AlignCenter size={12} className="inline" />}
+                              {align === 'right' && <AlignRight size={12} className="inline" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Couleurs */}
+                      <div className="mb-2.5">
+                        <label className="text-[10px] text-gray-500">Couleurs</label>
+                        <div className="flex gap-2 mt-1">
+                          <div className="flex items-center gap-1">
+                            <input type="color" value={selectedElement.style?.color || (wInfo?.color || '#3b82f6')}
+                              onChange={e => updateStyle(selectedId!, { color: e.target.value })}
+                              className="h-7 w-10 rounded border border-gray-200 cursor-pointer" />
+                            <span className="text-[9px] text-gray-400">Texte</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input type="color" value={selectedElement.style?.backgroundColor === 'transparent' ? '#ffffff' : (selectedElement.style?.backgroundColor || '#ffffff')}
+                              onChange={e => updateStyle(selectedId!, { backgroundColor: e.target.value })}
+                              className="h-7 w-10 rounded border border-gray-200 cursor-pointer" />
+                            <span className="text-[9px] text-gray-400">Fond</span>
+                          </div>
+                          <button onClick={() => updateStyle(selectedId!, { backgroundColor: 'transparent' })}
+                            className="px-2 py-1 text-[9px] border border-gray-200 rounded hover:bg-gray-50">Transparent</button>
+                        </div>
+                      </div>
+                      
+                      {/* Icône */}
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <label className="text-[10px] text-gray-500">Icône</label>
+                        <div className="grid grid-cols-8 gap-1 mt-1">
+                          {['🕐', '🌤️', '📅', '📢', '📰', '🌐', '🔲', '▶️', '📊', '💬', '🖼️', '🎬', '🔗', '⏰', '☀️', '⛅', '🌧️', '❄️', '⚡', '🌈', '🔥', '⭐', '❤️', '👍'].map(emoji => (
+                            <button key={emoji} onClick={() => updateWidgetConfig(selectedId!, { iconEmoji: emoji })}
+                              className={`p-1 text-lg rounded border ${cfg.iconEmoji === emoji ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          <button onClick={() => updateWidgetConfig(selectedId!, { showIcon: cfg.showIcon !== false })}
+                            className={`flex-1 py-1 text-[10px] border rounded ${cfg.showIcon !== false ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            Afficher
+                          </button>
+                          <button onClick={() => updateWidgetConfig(selectedId!, { showIcon: false })}
+                            className={`flex-1 py-1 text-[10px] border rounded ${cfg.showIcon === false ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            Masquer
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
