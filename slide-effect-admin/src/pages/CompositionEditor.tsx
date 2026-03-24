@@ -2055,15 +2055,24 @@ export default function CompositionEditor() {
                       const appInfo = APPS_LIST.find(a => a.id === el.widgetType)
                       const cfg = el.widgetConfig || {}
                       return (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 bg-blue-50/50 overflow-hidden">
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 overflow-hidden" style={{
+                          backgroundColor: el.style?.backgroundColor === 'transparent' ? 'transparent' : (el.style?.backgroundColor || (appInfo?.color ? appInfo.color + '22' : '#eff6ff')),
+                          color: el.style?.color || appInfo?.color || '#3b82f6',
+                          fontSize: (el.style?.fontSize || 16) * scaleX,
+                          fontFamily: el.style?.fontFamily,
+                          fontWeight: el.style?.fontWeight,
+                          fontStyle: el.style?.fontStyle,
+                          textDecoration: el.style?.textDecoration,
+                          textAlign: el.style?.textAlign as any,
+                        }}>
                           {/* Date & Heure */}
                           {el.widgetType === 'clock' && (
                             <div className="text-center">
-                              <div className="font-bold text-lg" style={{ fontSize: Math.max(24 * scaleX, 14) }}>
+                              <div className="font-bold" style={{ fontSize: Math.max((el.style?.fontSize || 24) * scaleX, 14) }}>
                                 {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: cfg.timeFormat === '12h' })}
                               </div>
                               {cfg.showDate !== false && (
-                                <div className="text-xs text-gray-600" style={{ fontSize: Math.max(12 * scaleX, 10) }}>
+                                <div style={{ fontSize: Math.max(((el.style?.fontSize || 16) * 0.65) * scaleX, 9), opacity: 0.75 }}>
                                   {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </div>
                               )}
@@ -2072,33 +2081,33 @@ export default function CompositionEditor() {
                           {/* Météo */}
                           {el.widgetType === 'weather' && (
                             <div className="text-center">
-                              <div className="text-3xl">🌤️</div>
-                              <div className="font-bold text-lg">22°C</div>
-                              <div className="text-xs text-gray-600">{cfg.city || 'Paris'}</div>
+                              <div style={{ fontSize: Math.max(28 * scaleX, 16) }}>{cfg.iconEmoji || '🌤️'}</div>
+                              <div className="font-bold" style={{ fontSize: Math.max((el.style?.fontSize || 20) * scaleX, 12) }}>22°C</div>
+                              <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75 }}>{cfg.city || 'Paris'}</div>
                             </div>
                           )}
                           {/* Page Web */}
                           {el.widgetType === 'webpage' && cfg.url && (
                             <div className="w-full h-full flex flex-col">
                               <div className="bg-gray-100 px-2 py-1 text-[10px] truncate border-b">{cfg.url}</div>
-                              <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
+                              <div className="flex-1 flex items-center justify-center text-xs opacity-60">
                                 🌐 {cfg.url}
                               </div>
                             </div>
                           )}
                           {/* Ticker */}
                           {el.widgetType === 'ticker' && (
-                            <div className="w-full overflow-hidden bg-gray-800 text-white px-2 py-1">
-                              <div className="whitespace-nowrap animate-pulse text-sm">
+                            <div className="w-full overflow-hidden px-2 py-1" style={{ backgroundColor: el.style?.backgroundColor || '#1f2937', color: el.style?.color || '#ffffff' }}>
+                              <div className="whitespace-nowrap animate-pulse" style={{ fontSize: Math.max((el.style?.fontSize || 14) * scaleX, 10) }}>
                                 {cfg.tickerText || 'Votre message défilant...'}
                               </div>
                             </div>
                           )}
                           {/* RSS */}
                           {el.widgetType === 'rss' && (
-                            <div className="w-full h-full overflow-y-auto p-2 text-xs">
-                              <div className="font-bold mb-1">📰 {cfg.rssUrl || 'Flux RSS'}</div>
-                              <div className="text-gray-600">Actualités en temps réel...</div>
+                            <div className="w-full h-full overflow-y-auto p-2">
+                              <div className="font-bold mb-1" style={{ fontSize: Math.max((el.style?.fontSize || 14) * scaleX, 10) }}>📰 {cfg.rssUrl || 'Flux RSS'}</div>
+                              <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75 }}>Actualités en temps réel...</div>
                             </div>
                           )}
                           {/* YouTube */}
@@ -2113,33 +2122,33 @@ export default function CompositionEditor() {
                           {/* QR Code */}
                           {el.widgetType === 'qrcode' && (
                             <div className="text-center">
-                              <div className="text-4xl">🔲</div>
-                              <div className="text-xs text-gray-600 mt-1">QR Code</div>
+                              <div style={{ fontSize: Math.max(36 * scaleX, 20) }}>🔲</div>
+                              <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75, marginTop: 2 }}>QR Code</div>
                             </div>
                           )}
                           {/* Calendrier */}
                           {el.widgetType === 'calendar' && (
                             <div className="text-center">
-                              <div className="text-2xl font-bold">{new Date().getDate()}</div>
-                              <div className="text-xs text-gray-600">
-                                {new Date().toLocaleDateString('fr-FR', { month: 'short' })}
+                              <div className="font-bold" style={{ fontSize: Math.max((el.style?.fontSize || 36) * scaleX, 16) }}>{new Date().getDate()}</div>
+                              <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75 }}>
+                                {new Date().toLocaleDateString('fr-FR', { month: 'long' })}
                               </div>
                             </div>
                           )}
                           {/* Graphiques */}
                           {el.widgetType === 'charts' && (
                             <div className="w-full h-full flex items-end justify-center gap-1 p-2">
-                              <div className="w-4 bg-blue-400 rounded-t" style={{ height: '40%' }}></div>
-                              <div className="w-4 bg-blue-500 rounded-t" style={{ height: '70%' }}></div>
-                              <div className="w-4 bg-blue-600 rounded-t" style={{ height: '55%' }}></div>
-                              <div className="w-4 bg-blue-700 rounded-t" style={{ height: '85%' }}></div>
+                              <div className="w-4 rounded-t" style={{ height: '40%', backgroundColor: el.style?.color || '#60a5fa' }}></div>
+                              <div className="w-4 rounded-t" style={{ height: '70%', backgroundColor: el.style?.color || '#3b82f6' }}></div>
+                              <div className="w-4 rounded-t" style={{ height: '55%', backgroundColor: el.style?.color || '#2563eb' }}></div>
+                              <div className="w-4 rounded-t" style={{ height: '85%', backgroundColor: el.style?.color || '#1d4ed8' }}></div>
                             </div>
                           )}
                           {/* Par défaut */}
                           {!['clock', 'weather', 'webpage', 'ticker', 'rss', 'youtube', 'qrcode', 'calendar', 'charts'].includes(el.widgetType || '') && (
                             <>
-                              <div className="text-2xl">{appInfo?.emoji || '📱'}</div>
-                              <span className="text-xs font-medium text-gray-600">{appInfo?.name || 'Widget'}</span>
+                              {cfg.showIcon !== false && <div style={{ fontSize: Math.max(28 * scaleX, 16) }}>{cfg.iconEmoji || appInfo?.emoji || '📱'}</div>}
+                              <span className="font-medium" style={{ fontSize: Math.max((el.style?.fontSize || 14) * scaleX, 9) }}>{appInfo?.name || 'Widget'}</span>
                             </>
                           )}
                         </div>
