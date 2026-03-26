@@ -2098,7 +2098,10 @@ export default function CompositionEditor() {
                           {/* Ticker */}
                           {el.widgetType === 'ticker' && (
                             <div className="w-full overflow-hidden px-2 py-1" style={{ backgroundColor: el.style?.backgroundColor || '#1f2937', color: el.style?.color || '#ffffff' }}>
-                              <div className="whitespace-nowrap animate-pulse" style={{ fontSize: Math.max((el.style?.fontSize || 14) * scaleX, 10) }}>
+                              <div className="whitespace-nowrap" style={{
+                                fontSize: Math.max((el.style?.fontSize || 14) * scaleX, 10),
+                                animation: 'ticker-scroll 10s linear infinite'
+                              }}>
                                 {cfg.tickerText || 'Votre message défilant...'}
                               </div>
                             </div>
