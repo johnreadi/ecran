@@ -12,6 +12,131 @@ import {
   Zap, Sparkles
 } from 'lucide-react'
 
+// ─── Hook météo ────────────────────────────────────────────────────────────────
+interface WeatherData {
+  temp: number
+  description: string
+  icon: string
+  city: string
+}
+
+function useWeather(city: string = 'Paris') {
+  const [weather, setWeather] = useState<WeatherData>({
+    temp: 22,
+    description: 'Partiellement nuageux',
+    icon: '🌤️',
+    city: city
+  })
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      setLoading(true)
+      try {
+        // Utiliser Open-Meteo API (gratuite, pas de clé requise)
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
+        const geoData = await geoRes.json()
+        
+        if (!geoData.results || geoData.results.length === 0) {
+          setLoading(false)
+          return
+        }
+
+        const { latitude, longitude, name } = geoData.results[0]
+        
+        const weatherRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`
+        )
+        const weatherData = await weatherRes.json()
+        
+        const code = weatherData.current_weather.weathercode
+        const isDay = weatherData.current_weather.is_day
+        
+        // Mapping WMO weather codes to icons
+        const getIcon = (code: number, isDay: number) => {
+          if (code === 0) return isDay ? '☀️' : '🌙'
+          if ([1, 2, 3].includes(code)) return isDay ? '🌤️' : '☁️'
+          if ([45, 48].includes(code)) return '🌫️'
+          if ([51, 53, 55, 56, 57].includes(code)) return '🌦️'
+          if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return '🌧️'
+          if ([71, 73, 75, 77, 85, 86].includes(code)) return '❄️'
+          if ([95, 96, 99].includes(code)) return '⛈️'
+          return '🌤️'
+        }
+        
+        setWeather({
+          temp: Math.round(weatherData.current_weather.temperature),
+          description: getWeatherDescription(code),
+          icon: getIcon(code, isDay),
+          city: name
+        })
+      } catch (err) {
+        console.error('Erreur météo:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchWeather()
+    // Rafraîchir toutes les 30 minutes
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [city])
+
+  return { weather, loading }
+}
+
+function getWeatherDescription(code: number): string {
+  const descriptions: Record<number, string> = {
+    0: 'Ciel dégagé',
+    1: 'Principalement dégagé', 2: 'Partiellement nuageux', 3: 'Couvert',
+    45: 'Brouillard', 48: 'Brouillard givrant',
+    51: 'Bruine légère', 53: 'Bruine modérée', 55: 'Bruine dense',
+    56: 'Bruine verglaçante légère', 57: 'Bruine verglaçante dense',
+    61: 'Pluie légère', 63: 'Pluie modérée', 65: 'Pluie forte',
+    66: 'Pluie verglaçante légère', 67: 'Pluie verglaçante forte',
+    71: 'Neige légère', 73: 'Neige modérée', 75: 'Neige forte',
+    77: 'Grains de neige',
+    80: 'Averses de pluie légères', 81: 'Averses de pluie modérées', 82: 'Averses de pluie violentes',
+    85: 'Averses de neige légères', 86: 'Averses de neige fortes',
+    95: 'Orage', 96: 'Orage avec grêle légère', 99: 'Orage avec grêle forte'
+  }
+  return descriptions[code] || 'Partiellement nuageux'
+}
+
+// Composant WeatherWidget pour l'aperçu
+function WeatherWidget({ 
+  city, 
+  scaleX, 
+  fontSize, 
+  iconSize, 
+  color,
+  iconEmoji 
+}: { 
+  city: string; 
+  scaleX: number; 
+  fontSize?: number; 
+  iconSize?: number;
+  color?: string;
+  iconEmoji?: string;
+}) {
+  const { weather } = useWeather(city || 'Paris')
+  
+  return (
+    <div className="text-center" style={{ color }}>
+      <div style={{ fontSize: Math.max((iconSize || 28) * scaleX, 16) }}>
+        {iconEmoji || weather.icon}
+      </div>
+      <div className="font-bold" style={{ fontSize: Math.max((fontSize || 20) * scaleX, 12) }}>
+        {weather.temp}°C
+      </div>
+      <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75 }}>
+        {weather.city}
+      </div>
+    </div>
+  )
+}
+
 // ─── Animation types ───────────────────────────────────────────────────────────
 interface ElementAnimation {
   type: 'none' | 'fadeIn' | 'fadeOut' | 'slideLeft' | 'slideRight' | 'slideUp' | 'slideDown'
@@ -61,6 +186,7 @@ interface Element {
     city?: string
     weatherUnit?: 'celsius' | 'fahrenheit'
     showForecast?: boolean
+    iconSize?: number
     // Calendrier
     calendarView?: 'month' | 'week' | 'agenda'
     calendarUrl?: string
@@ -877,7 +1003,7 @@ export default function CompositionEditor() {
                           height: app.id === 'ticker' ? 80 : app.id === 'clock' ? 120 : 200,
                           widgetType: app.id,
                           content: app.name,
-                          style: { backgroundColor: app.color + '22', borderRadius: 8, borderWidth: 1, borderColor: app.color + '66', color: app.color }
+                          style: { backgroundColor: app.color + '22', borderRadius: 8, borderWidth: 0, color: app.color }
                         })}
                         className="w-full flex items-center gap-3 p-2.5 bg-gray-50 hover:bg-orange-50 hover:border-orange-300 border border-transparent rounded-xl transition-colors text-left group">
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: app.color + '22' }}>
@@ -1296,6 +1422,13 @@ export default function CompositionEditor() {
                       <div>
                         <label className={labelCls}>Ville</label>
                         <input type="text" value={cfg.city || ''} placeholder="Ex: Paris, London..." onChange={e => updateWidgetConfig(selectedId!, { city: e.target.value })} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Taille de l'icône: {cfg.iconSize || 28}px</label>
+                        <input type="range" min="16" max="72" step="2"
+                          value={cfg.iconSize || 28}
+                          onChange={e => updateWidgetConfig(selectedId!, { iconSize: parseInt(e.target.value) })}
+                          className="w-full accent-orange-500" />
                       </div>
                       <div>
                         <label className={labelCls}>Unité de température</label>
@@ -2089,11 +2222,14 @@ export default function CompositionEditor() {
                           )}
                           {/* Météo */}
                           {el.widgetType === 'weather' && (
-                            <div className="text-center">
-                              <div style={{ fontSize: Math.max(28 * scaleX, 16) }}>{cfg.iconEmoji || '🌤️'}</div>
-                              <div className="font-bold" style={{ fontSize: Math.max((el.style?.fontSize || 20) * scaleX, 12) }}>22°C</div>
-                              <div style={{ fontSize: Math.max(12 * scaleX, 9), opacity: 0.75 }}>{cfg.city || 'Paris'}</div>
-                            </div>
+                            <WeatherWidget 
+                              city={cfg.city || 'Paris'}
+                              scaleX={scaleX}
+                              fontSize={el.style?.fontSize}
+                              iconSize={cfg.iconSize}
+                              color={el.style?.color}
+                              iconEmoji={cfg.iconEmoji}
+                            />
                           )}
                           {/* Page Web */}
                           {el.widgetType === 'webpage' && cfg.url && (
