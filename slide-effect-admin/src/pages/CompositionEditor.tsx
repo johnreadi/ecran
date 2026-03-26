@@ -1770,7 +1770,16 @@ export default function CompositionEditor() {
                   </div>
 
                   <div className={sectionCls}>
-                    <label className={labelCls}>Bordure</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className={labelCls}>Bordure</label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox"
+                          checked={(selectedElement.style?.borderWidth || 0) > 0}
+                          onChange={e => updateStyle(selectedId!, { borderWidth: e.target.checked ? (selectedElement.style?.borderWidth || 1) : 0 })}
+                          className="w-3.5 h-3.5 accent-orange-500" />
+                        <span className="text-[10px] text-gray-600">Afficher</span>
+                      </label>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <span className="text-[9px] text-gray-400 mb-0.5 block">Épaisseur</span>
